@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 10 · 2026-09-11 · `lv_simulate = abap_false` · เอกสารเดียว 5 บรรทัด · tax line เป็น `_GLItems` ระบุ G/L ตรง ๆ **ไม่มี tax code** (ไม่มี `_TaxItems`)
+revision 11 · 2026-09-11 · `lv_simulate = abap_false` · เอกสารเดียว 5 บรรทัด · tax line เป็น `_GLItems` ระบุ G/L ตรง ๆ **+ tax code DM/O1** (ไม่มี `_TaxItems`)
 
 ## แนวคิด
 
@@ -36,6 +36,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 8 | tax item: + `ConditionType = 'MWAS'` · ลบ `TaxDeterminationDate` | `KSCHL is empty` · doc ProductTaxItem บอก TaxDeterminationDate "Do not use" · isolate ให้เหลือ blocker business place |
 | 9 | กลับเป็นเอกสารเดียว 5 บรรทัด · `GLAccountLineItem` = customer 1 · WHT 2 · DM 3 · O1 4 · bank 5 · WHT ไม่มี tax code | ผู้ใช้ขอทดสอบว่าลำดับบรรทัดมีผลกับ check deferred tax ไหม |
 | 10 | ไม่มี `_TaxItems` · บรรทัด DM/O1 เป็น `_GLItems` ระบุ `0021082005` / `0021082003` ตรง ๆ **ไม่ใส่ tax code** (มี comment ให้เปิดถ้าจะ re-test แบบมี tax code = rev 2) | ผู้ใช้ขอทดสอบ direct posting ไป tax account |
+| 11 | เปิด tax code `DM` / `O1` บน `_GLItems` [3]/[4] (re-test rev 2 แต่มี business place / tax date / RFPI ครบ) | rev 10: tax account บังคับ tax code |
 
 ## Source
 
@@ -211,8 +212,7 @@ CLASS ycl_payment IMPLEMENTATION.
     " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (16 chars)
     DATA(lv_reference) = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
 
-    " rev 10: ไม่มี _taxitems — บรรทัดภาษีเป็น _glitems ระบุ G/L ตรง ๆ (ไม่ใส่ tax code)
-    "   แบบมี tax code = rev 2 → Tax statement item missing (base line) · เปิด comment 2 บรรทัด taxcode ถ้าจะ re-test
+    " rev 11: ไม่มี _taxitems — บรรทัดภาษีเป็น _glitems ระบุ G/L ตรง ๆ + tax code (re-test rev 2 พร้อม business place)
     rt_entries = VALUE #(
       ( %cid   = |PAY{ lv_now }|
         %param = VALUE #(
@@ -250,7 +250,7 @@ CLASS ycl_payment IMPLEMENTATION.
             " [3] โอนออกจาก deferred output tax — G/L ตรง ๆ
             ( glaccountlineitem   = '3'
               glaccount           = is_tax_item-glaccount                 " 0021082005
-*              taxcode             = is_tax_item-taxcode                  " DM — เปิดถ้าจะ re-test แบบมี tax code
+              taxcode             = is_tax_item-taxcode                  " DM
               valuedate           = lv_today
               businessplace       = '0000'
               _currencyamount     = VALUE #( ( currencyrole           = '00'
@@ -260,7 +260,7 @@ CLASS ycl_payment IMPLEMENTATION.
             " [4] เข้า output tax — G/L ตรง ๆ
             ( glaccountlineitem   = '4'
               glaccount           = '0021082003'
-*              taxcode             = 'O1'                                " เปิดถ้าจะ re-test แบบมี tax code
+              taxcode             = 'O1'
               assignmentreference = lv_tax_assignment
               valuedate           = lv_today
               businessplace       = '0000'
