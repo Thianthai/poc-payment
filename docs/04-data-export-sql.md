@@ -161,6 +161,29 @@ SELECT *
 
 > Q4/Q5 ได้ column เยอะ — paste มาทั้งหมดได้เลย Claude จะคัด field ที่เกี่ยวเอง
 
+## Q7 — G/L master ของบัญชีที่ใช้ (tax category / posting without tax) — สำหรับหาทางใส่ DM/O1
+
+```abap
+SELECT *
+  FROM I_GLAccountInCompanyCode
+  WHERE CompanyCode = '1000'
+    AND GLAccount IN ( '0011092001', '0011047003', '0021082005', '0021082003' )
+  INTO TABLE @DATA(lt_gl_master).
+```
+
+## Q8 — tax code ที่เคยใช้จริงบน company code (หา 0% code สำหรับบรรทัด bank / WHT)
+
+```abap
+SELECT TaxCode,
+       COUNT(*)                            AS ItemCount,
+       SUM( AmountInTransactionCurrency )  AS TotalAmount
+  FROM I_OperationalAcctgDocItem
+  WHERE CompanyCode = '1000'
+    AND TaxCode    <> ''
+  GROUP BY TaxCode
+  INTO TABLE @DATA(lt_tax_codes).
+```
+
 ---
 
 ## ผลที่ได้ (export 2026-09-11 · ทุก query compile ผ่านทุก field)

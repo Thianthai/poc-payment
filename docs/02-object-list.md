@@ -47,6 +47,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | **post จริงครั้งที่ 4–6** (rev 4) | ✅ **POST สำเร็จ** — ได้ `3300000020`, `3300000021` (กดซ้ำ · reverse ทิ้งแล้ว) และ **`3300000024`** · console ว่างเพราะ dump หลัง commit (คาดว่า `CONVERT KEY` ใช้นอก save sequence ไม่ได้) → รอ dump + export เอกสารเทียบ |
 | 2026-09-11 | Feed Reader: `BEHAVIOR_STATEMENT_ILLEGAL` — `Statement "CONVERT KEY" is not allowed with this status` ใน `post_entry` (เหมือนกันทั้ง 3 ครั้ง) → ส่ง rev 5 ตัด `CONVERT KEY` + `gc_simulate = abap_true` | ✅ |
 | 2026-09-11 | export `3300000024` Q2+Q3+Q6 เทียบกับ `3300000017` | ⚠️ bank + WHT + header ตรงทุก field · **customer line PK 11 (credit memo) แทน 15** + `WithholdingTaxCode` ว่าง · ไม่มี DM/O1 ตาม option A · รอผู้ใช้เลือกปิด POC / ลอง `_WithHoldingTaxItems` |
+| 2026-09-11 | ผู้ใช้สั่ง: หาทาง post DM/O1 ให้ได้ก่อน | 🟡 ทาง 1 = tax code 0% บน bank/WHT (รอ Q7/Q8) · ทาง 2 = เอกสารแยก `_TaxItems` อย่างเดียว |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
