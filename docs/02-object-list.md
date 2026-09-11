@@ -59,6 +59,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | ส่ง rev 8 | ✅ |
 | 2026-09-11 | **post จริงครั้งที่ 9** (rev 8) | ❌ เอกสาร 1 `no errors` · เอกสาร 2 เหลือ **`Enter a business place.` ตัวเดียว** (`MWAS` ถูก) → tax item ล้วนไม่มีที่ใส่ business place → **ทางเอกสารแยกตัน** · รอผู้ใช้เลือก ปิด POC / ลองลูกเล่นสุดท้าย (G/L line + tax code + tax item amount 0) |
 | 2026-09-11 | ผู้ใช้ขอลอง rev 9: เอกสารเดียว 5 บรรทัด เรียง customer/WHT/DM/O1/bank | ❌ **post จริงครั้งที่ 10** — `G/L account item without tax code in document with deferred taxes` เหมือนเดิม → ลำดับไม่มีผล · สรุป: บน TH `I_JournalEntryTP` post DM→O1 ไม่ได้ทั้งรวมใบและแยกใบ |
+| 2026-09-11 | ผู้ใช้ขอลอง rev 10: tax line เป็น `_GLItems` ระบุ tax account ตรง ๆ ไม่มี tax code | 🟡 รอผล post จริงครั้งที่ 11 |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
