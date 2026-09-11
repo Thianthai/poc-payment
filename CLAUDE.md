@@ -55,6 +55,10 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   `Time dependent taxes: tax date has to be filled from caller` +
   `For tax code DM, the key date 00/00/0000 does not fall in any validity period` (2026-09-11)
 - `EXECUTE post` ที่ fail ได้ `FAILED` + `REPORTED` ปกติ **ไม่ dump** (อย่างน้อยเคส validation)
+- **บรรทัดภาษีส่งเป็น `_GLItems` + `TaxCode` ไม่ได้** — ระบบมองเป็น base line แล้วฟ้อง
+  `Tax statement item missing for tax code DM` → ต้องใช้ `_TaxItems` (2026-09-11)
+- **Thai localization ต้องส่ง `BusinessPlace`** (`0000` = head office ตามเอกสารตัวอย่าง)
+  ไม่งั้น `Enter a business place.` (2026-09-11)
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 
