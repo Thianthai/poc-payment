@@ -34,6 +34,23 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 
 ผลที่ได้จาก POC นี้คือเอกสาร DZ ที่ **ค้างเป็น open item บน customer** ไม่ได้ผูกกับ invoice
 
+## ผลลัพธ์ POC (2026-09-11) — post ได้ แต่ไม่เหมือนตัวอย่างทุกจุด
+
+`YCL_PAYMENT` post เอกสาร **`3300000024`** (DZ · 3 บรรทัด) จาก invoice `9400000005` สำเร็จ
+
+| บรรทัด | ตัวอย่าง `3300000017` (Post Incoming Payments) | API | สถานะ |
+|---|---|---|---|
+| bank `0011092001` +6,238.96 | PK 40 | PK 40 เหมือนทุก field | ✅ |
+| WHT `0011047003` +179.97 | PK 40 | PK 40 เหมือนทุก field | ✅ |
+| deferred `DM` +419.93 / output `O1` −419.93 | มี (generate ตอน clear) | ยังไม่ได้ — ชน check deferred tax · กำลังทดลอง | 🟡 |
+| customer `0001000082` −6,418.93 | **PK 15** incoming payment | **PK 11** credit memo | ❌ **ข้อจำกัด API** — `_ARItems` สร้างได้แค่ 01/11 |
+
+ข้อจำกัดที่พิสูจน์แล้ว (รายละเอียดใน [docs/04](docs/04-data-export-sql.md)):
+
+- **PK 15 ทำไม่ได้** — ถ้าเป็น must ต้องใช้ payment transaction (Post Incoming Payments / Bank Statement) ไม่ใช่ Journal Entry Post
+- ไม่ clear open item · ไม่ derive `WithholdingTaxCode` จาก customer master
+- บรรทัดโอน deferred tax ต้องส่งเป็น `_TaxItems` และเอกสารต้องผ่านกฎ "ทุก G/L line ที่ tax-relevant ต้องมี tax code"
+
 ## Object บน repo
 
 abapGit serialize ด้วย `FOLDER_LOGIC = FULL` · `STARTING_FOLDER = /src/`

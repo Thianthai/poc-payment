@@ -48,6 +48,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | Feed Reader: `BEHAVIOR_STATEMENT_ILLEGAL` — `Statement "CONVERT KEY" is not allowed with this status` ใน `post_entry` (เหมือนกันทั้ง 3 ครั้ง) → ส่ง rev 5 ตัด `CONVERT KEY` + `gc_simulate = abap_true` | ✅ |
 | 2026-09-11 | export `3300000024` Q2+Q3+Q6 เทียบกับ `3300000017` | ⚠️ bank + WHT + header ตรงทุก field · **customer line PK 11 (credit memo) แทน 15** + `WithholdingTaxCode` ว่าง · ไม่มี DM/O1 ตาม option A · รอผู้ใช้เลือกปิด POC / ลอง `_WithHoldingTaxItems` |
 | 2026-09-11 | ผู้ใช้สั่ง: หาทาง post DM/O1 ให้ได้ก่อน | 🟡 ทาง 1 = tax code 0% บน bank/WHT (รอ Q7/Q8) · ทาง 2 = เอกสารแยก `_TaxItems` อย่างเดียว |
+| 2026-09-11 | Q7/Q8: bank `0011092001` tax category ว่าง (ใส่ tax code ไม่ได้) · WHT `0011047003` = `*` · มี `O0` 0% | 🟡 แผน rev 6: `O0` บน WHT line + คืน `_TaxItems` |
+| 2026-09-11 | ผู้ใช้ระบุข้อกำหนดเต็ม: 5 บรรทัด **customer ต้องเป็น PK 15** | ❌ **PK 15 ทำไม่ได้ด้วย `I_JournalEntryTP`** — API สร้าง AR ได้แค่ 01/11 (SAP doc) · ไม่มี field posting key · พิสูจน์แล้ว `3300000024` = 11 → รอผู้ใช้/functional ตัดสิน: ยอมรับ 11 (ทำ rev 6 ต่อ) หรือเปลี่ยน API เป็น Bank Statement |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
