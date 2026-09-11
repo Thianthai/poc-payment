@@ -41,6 +41,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 13 | ลบ `TaxItemAcctgDocItemRef` ออกจาก tax item | FF 817 `Taxes by item is not activated` — TH เป็น summary tax |
 | 14 | tax item เลข item = G/L line (3/4) · `IsDirectTaxPosting` · ยอด ±419.93 · base ±5,999 | `Entry of tax for DM 003 … is not possible because of tax base 0` — G/L line บน tax account หา base จาก tax item เลขเดียวกัน (แบบ BAPI direct tax) |
 | 15 | tax item เลข 6/7 · direct · amount 0 · base ±5,999 | rev 14: `FI/CO interface: Line item entered several times` — item number ต้อง unique ข้าม node |
+| 16 | กลับไป 2 ใบ (rev 8) · ใบ 2 เป็น `_GLItems` 2 บรรทัด tax account + tax code DM/O1 + business place (ไม่มี `_TaxItems`) — code อยู่ใน chat ยังไม่ merge snapshot | ผู้ใช้ขอลองใบแยกแบบ G/L |
 
 ## Source
 
