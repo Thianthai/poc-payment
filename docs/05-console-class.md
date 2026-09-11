@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 7 · 2026-09-11 · `lv_simulate = abap_false` · **2 เอกสาร**: DZ 3 บรรทัด + SA `_TaxItems` ล้วน (DM→O1)
+revision 8 · 2026-09-11 · `lv_simulate = abap_false` · **2 เอกสาร**: DZ 3 บรรทัด + SA `_TaxItems` ล้วน (DM→O1) · tax item + `ConditionType MWAS`, ไม่มี tax date
 
 ## แนวคิด
 
@@ -33,6 +33,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 6 | คืน `_TaxItems` DM/O1 · WHT line [2] ใส่ `TaxCode O0` · customer กลับเป็น `'5'` | ทดลองสมมติฐาน: check deferred tax ดูเฉพาะบัญชี tax-relevant (bank ใส่ tax code ไม่ได้อยู่แล้ว) |
 | 6b | ถอด `CONSTANTS` ทั้งหมด → literal ตรงจุดที่ใช้ · `gc_simulate` → `lv_simulate` ใน `main` | ผู้ใช้ขอให้อ่านง่ายตอน investigate (logic ไม่เปลี่ยน) |
 | 7 | `build_entry` คืน 2 entries: DZ (bank/WHT/customer · WHT ไม่มี tax code) + `SA` `RFBU` มีแต่ `_TaxItems` DM/O1 · reference ใบ 2 = ใบ 1 + `T` · `post_entry` query `LIKE` ได้ทั้งคู่ | เอกสารเดียวชนกฎ deferred tax ที่บรรทัด bank → แยกใบ |
+| 8 | tax item: + `ConditionType = 'MWAS'` · ลบ `TaxDeterminationDate` | `KSCHL is empty` · doc ProductTaxItem บอก TaxDeterminationDate "Do not use" · isolate ให้เหลือ blocker business place |
 
 ## Source
 
@@ -269,13 +270,14 @@ CLASS ycl_payment IMPLEMENTATION.
           createdbyuser           = lv_user
 
           " G/L derive จาก TaxCode + TaxItemClassification (MWS) → DM = 0021082005 · O1 = 0021082003
+          " rev 8: + ConditionType (KSCHL is empty) · ตัด TaxDeterminationDate ออก (doc: "Do not use")
           _taxitems = VALUE #(
             " [1] โอนออกจาก deferred output tax (tax code DM จาก invoice)
             ( glaccountlineitem     = '1'
               taxcode               = is_tax_item-taxcode                 " DM
               taxitemclassification = 'MWS'
+              conditiontype         = 'MWAS'                             " output tax condition — ถ้าผิดจะได้ FF 762
               isdirecttaxposting    = abap_true
-              taxdeterminationdate  = lv_today
               _currencyamount       = VALUE #( ( currencyrole           = '00'
                                                  currency               = lv_currency
                                                  journalentryitemamount = lv_tax_amount
@@ -284,8 +286,8 @@ CLASS ycl_payment IMPLEMENTATION.
             ( glaccountlineitem     = '2'
               taxcode               = 'O1'                               " target ของ DM
               taxitemclassification = 'MWS'
+              conditiontype         = 'MWAS'
               isdirecttaxposting    = abap_true
-              taxdeterminationdate  = lv_today
               _currencyamount       = VALUE #( ( currencyrole           = '00'
                                                  currency               = lv_currency
                                                  journalentryitemamount = - lv_tax_amount
