@@ -58,6 +58,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | อ่าน doc ProductTaxItem | `ConditionType` required เมื่อ classification→condition เป็น 1:n · `TaxDeterminationDate` บน tax item = "Do not use" · **ไม่มี field BusinessPlace** ใน tax item / header → เอกสาร tax item ล้วนน่าจะ post ไม่ได้บน TH · เสนอ rev 8 (`MWAS`, ลบ tax date) เพื่อ isolate blocker |
 | 2026-09-11 | ส่ง rev 8 | ✅ |
 | 2026-09-11 | **post จริงครั้งที่ 9** (rev 8) | ❌ เอกสาร 1 `no errors` · เอกสาร 2 เหลือ **`Enter a business place.` ตัวเดียว** (`MWAS` ถูก) → tax item ล้วนไม่มีที่ใส่ business place → **ทางเอกสารแยกตัน** · รอผู้ใช้เลือก ปิด POC / ลองลูกเล่นสุดท้าย (G/L line + tax code + tax item amount 0) |
+| 2026-09-11 | ผู้ใช้ขอลอง rev 9: เอกสารเดียว 5 บรรทัด เรียง customer/WHT/DM/O1/bank | 🟡 รอผล post จริงครั้งที่ 10 |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 

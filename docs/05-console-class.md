@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 8 · 2026-09-11 · `lv_simulate = abap_false` · **2 เอกสาร**: DZ 3 บรรทัด + SA `_TaxItems` ล้วน (DM→O1) · tax item + `ConditionType MWAS`, ไม่มี tax date
+revision 9 · 2026-09-11 · `lv_simulate = abap_false` · เอกสารเดียว 5 บรรทัด เรียง customer 1 · WHT 2 · DM 3 · O1 4 · bank 5 (ผู้ใช้ขอทดสอบลำดับ)
 
 ## แนวคิด
 
@@ -34,6 +34,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 6b | ถอด `CONSTANTS` ทั้งหมด → literal ตรงจุดที่ใช้ · `gc_simulate` → `lv_simulate` ใน `main` | ผู้ใช้ขอให้อ่านง่ายตอน investigate (logic ไม่เปลี่ยน) |
 | 7 | `build_entry` คืน 2 entries: DZ (bank/WHT/customer · WHT ไม่มี tax code) + `SA` `RFBU` มีแต่ `_TaxItems` DM/O1 · reference ใบ 2 = ใบ 1 + `T` · `post_entry` query `LIKE` ได้ทั้งคู่ | เอกสารเดียวชนกฎ deferred tax ที่บรรทัด bank → แยกใบ |
 | 8 | tax item: + `ConditionType = 'MWAS'` · ลบ `TaxDeterminationDate` | `KSCHL is empty` · doc ProductTaxItem บอก TaxDeterminationDate "Do not use" · isolate ให้เหลือ blocker business place |
+| 9 | กลับเป็นเอกสารเดียว 5 บรรทัด · `GLAccountLineItem` = customer 1 · WHT 2 · DM 3 · O1 4 · bank 5 · WHT ไม่มี tax code | ผู้ใช้ขอทดสอบว่าลำดับบรรทัดมีผลกับ check deferred tax ไหม |
 
 ## Source
 
@@ -206,13 +207,11 @@ CLASS ycl_payment IMPLEMENTATION.
     DATA(lv_assignment_date) = CONV ty_assignment( lv_today ).
 
     " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (16 chars)
-    " เอกสาร 1 = POC0911075532 · เอกสาร 2 = POC0911075532T
-    DATA(lv_reference)     = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
-    DATA(lv_reference_tax) = CONV ty_reference( |{ lv_reference }T| ).
+    DATA(lv_reference) = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
 
+    " rev 9: เอกสารเดียว 5 บรรทัด เรียงตาม GLAccountLineItem
+    "   1 customer · 2 WHT · 3 DM (tax item) · 4 O1 (tax item) · 5 bank
     rt_entries = VALUE #(
-      " ================= เอกสาร 1: payment DZ (bank / WHT / customer) =================
-      " ไม่มี deferred tax code ในเอกสาร → กฎ "ทุก G/L line ต้องมี tax code" ไม่ทำงาน
       ( %cid   = |PAY{ lv_now }|
         %param = VALUE #(
           companycode             = '1000'
@@ -224,9 +223,27 @@ CLASS ycl_payment IMPLEMENTATION.
           taxdeterminationdate    = lv_today
           createdbyuser           = lv_user
 
+          _aritems = VALUE #(
+            " [1] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
+            ( glaccountlineitem = '1'
+              customer          = is_ar_item-customer                    " 0001000082
+              businessplace     = '0000'
+              _currencyamount   = VALUE #( ( currencyrole           = '00'
+                                             currency               = lv_currency
+                                             journalentryitemamount = lv_customer_amount ) ) ) )
+
           _glitems = VALUE #(
-            " [1] เงินเข้าธนาคาร
-            ( glaccountlineitem   = '1'
+            " [2] ภาษีหัก ณ ที่จ่ายที่ลูกค้าหักไว้ — ไม่ใส่ tax code (ตามตัวอย่าง)
+            ( glaccountlineitem   = '2'
+              glaccount           = '0011047003'
+              assignmentreference = lv_assignment_date
+              valuedate           = lv_today
+              businessplace       = '0000'
+              _currencyamount     = VALUE #( ( currencyrole           = '00'
+                                               currency               = lv_currency
+                                               journalentryitemamount = lv_wht_amount ) ) )
+            " [5] เงินเข้าธนาคาร — บัญชี tax category ว่าง ใส่ tax code ไม่ได้
+            ( glaccountlineitem   = '5'
               glaccount           = '0011092001'
               documentitemtext    = 'รับผ่านช่องทาง mobile banking'
               assignmentreference = lv_assignment_date
@@ -236,54 +253,22 @@ CLASS ycl_payment IMPLEMENTATION.
               businessplace       = '0000'                             " Thai: head office
               _currencyamount     = VALUE #( ( currencyrole           = '00'   " transaction currency
                                                currency               = lv_currency
-                                               journalentryitemamount = lv_bank_amount ) ) )
-            " [2] ภาษีหัก ณ ที่จ่ายที่ลูกค้าหักไว้ — ไม่ใส่ tax code (ตามตัวอย่าง)
-            ( glaccountlineitem   = '2'
-              glaccount           = '0011047003'
-              assignmentreference = lv_assignment_date
-              valuedate           = lv_today
-              businessplace       = '0000'
-              _currencyamount     = VALUE #( ( currencyrole           = '00'
-                                               currency               = lv_currency
-                                               journalentryitemamount = lv_wht_amount ) ) ) )
-
-          _aritems = VALUE #(
-            " [3] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
-            ( glaccountlineitem = '3'
-              customer          = is_ar_item-customer                    " 0001000082
-              businessplace     = '0000'
-              _currencyamount   = VALUE #( ( currencyrole           = '00'
-                                             currency               = lv_currency
-                                             journalentryitemamount = lv_customer_amount ) ) ) ) ) )
-
-      " ================= เอกสาร 2: โอน deferred tax DM → O1 (tax item ล้วน) =================
-      " ไม่มี G/L line ธรรมดา → ไม่มีอะไรให้กฎ deferred tax จับ · รูปแบบเดียวกับ job Transfer Deferred Tax
-      ( %cid   = |TAX{ lv_now }|
-        %param = VALUE #(
-          companycode             = '1000'
-          businesstransactiontype = 'RFBU'                             " G/L posting ธรรมดา
-          accountingdocumenttype  = 'SA'
-          documentdate            = lv_today
-          postingdate             = lv_today
-          documentreferenceid     = lv_reference_tax
-          taxdeterminationdate    = lv_today
-          createdbyuser           = lv_user
+                                               journalentryitemamount = lv_bank_amount ) ) ) )
 
           " G/L derive จาก TaxCode + TaxItemClassification (MWS) → DM = 0021082005 · O1 = 0021082003
-          " rev 8: + ConditionType (KSCHL is empty) · ตัด TaxDeterminationDate ออก (doc: "Do not use")
           _taxitems = VALUE #(
-            " [1] โอนออกจาก deferred output tax (tax code DM จาก invoice)
-            ( glaccountlineitem     = '1'
+            " [3] โอนออกจาก deferred output tax (tax code DM จาก invoice)
+            ( glaccountlineitem     = '3'
               taxcode               = is_tax_item-taxcode                 " DM
               taxitemclassification = 'MWS'
-              conditiontype         = 'MWAS'                             " output tax condition — ถ้าผิดจะได้ FF 762
+              conditiontype         = 'MWAS'
               isdirecttaxposting    = abap_true
               _currencyamount       = VALUE #( ( currencyrole           = '00'
                                                  currency               = lv_currency
                                                  journalentryitemamount = lv_tax_amount
                                                  taxbaseamount          = lv_tax_base ) ) )
-            " [2] เข้า output tax
-            ( glaccountlineitem     = '2'
+            " [4] เข้า output tax
+            ( glaccountlineitem     = '4'
               taxcode               = 'O1'                               " target ของ DM
               taxitemclassification = 'MWS'
               conditiontype         = 'MWAS'
