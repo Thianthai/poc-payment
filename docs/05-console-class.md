@@ -74,6 +74,8 @@ CLASS ycl_payment DEFINITION
            END OF ty_invoice_item.
     TYPES tt_invoice_item TYPE STANDARD TABLE OF ty_invoice_item WITH EMPTY KEY.
     TYPES tt_entry        TYPE TABLE FOR ACTION IMPORT i_journalentrytp~post.
+    TYPES ty_assignment   TYPE c LENGTH 18.   " แทน acpi_zuonr (data element ไม่ released)
+    TYPES ty_reference    TYPE c LENGTH 16.   " แทน xblnr
 
     METHODS read_invoice
       IMPORTING io_out       TYPE REF TO if_oo_adt_classrun_out
@@ -210,11 +212,11 @@ CLASS ycl_payment IMPLEMENTATION.
     lv_bank_amount     = - lv_customer_amount - lv_wht_amount.           " Dr bank         +6,238.96
 
     " assignment ตามเอกสารตัวอย่าง: bank/WHT = posting date · output tax = key ของ tax line บน invoice
-    DATA(lv_assignment_date) = CONV acpi_zuonr( lv_today ).
-    DATA(lv_tax_assignment)  = CONV acpi_zuonr( |{ gc_invoice }{ gc_fiscal_year }{ is_tax_item-accountingdocumentitem }| ).
+    DATA(lv_assignment_date) = CONV ty_assignment( lv_today ).
+    DATA(lv_tax_assignment)  = CONV ty_assignment( |{ gc_invoice }{ gc_fiscal_year }{ is_tax_item-accountingdocumentitem }| ).
 
-    " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (xblnr 16 chars)
-    DATA(lv_reference) = CONV xblnr( |POC{ lv_date_text+4(4) }{ lv_now }| ).
+    " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (16 chars)
+    DATA(lv_reference) = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
 
     rt_entries = VALUE #(
       ( %cid   = |PAY{ lv_now }|
