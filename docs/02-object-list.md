@@ -43,6 +43,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | **post จริงครั้งที่ 2** (+ `TaxDeterminationDate`) | ❌ `FAILED` — `Tax statement item missing for tax code DM` (G/L line + tax code ถูกมองเป็น base line → ต้องย้าย [3]/[4] ไป `_TaxItems`) · `Enter a business place.` (Thai → `BusinessPlace = 0000` ตาม Q6) · tax date ผ่านแล้ว |
 | 2026-09-11 | ส่ง rev 3: tax line → `_TaxItems` (`MWS`, `IsDirectTaxPosting`) · `BusinessPlace 0000` ทุก G/L / AR line | ✅ ส่งแล้ว |
 | 2026-09-11 | **post จริงครั้งที่ 3** (rev 3) | ❌ `FAILED` — `G/L account item without tax code in document $ 1 with deferred taxes` · tax statement / business place ผ่านแล้ว · = กฎ deferred tax: ทุก G/L line ต้องมี tax code → บรรทัด DM/O1 ของตัวอย่างเป็นของที่ Post Incoming Payments generate ตอน clear ไม่ใช่ post มือ · รอผู้ใช้เลือก A (ตัด tax line เหลือ 3 บรรทัด) / B (ใส่ tax code 0% บน bank/WHT) |
+| 2026-09-11 | เลือก **A** → ส่ง rev 4 (comment `_taxitems` ออก · 3 บรรทัด) | ✅ |
+| 2026-09-11 | **post จริงครั้งที่ 4–6** (rev 4) | ✅ **POST สำเร็จ** — ได้ `3300000020`, `3300000021` (กดซ้ำ · reverse ทิ้งแล้ว) และ **`3300000024`** · console ว่างเพราะ dump หลัง commit (คาดว่า `CONVERT KEY` ใช้นอก save sequence ไม่ได้) → รอ dump + export เอกสารเทียบ |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -50,9 +52,11 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 |---|---|
 | ~~ชื่อ field จริงของ `_GLItems` / `_ARItems` / `_CurrencyAmount`~~ | ✅ paste จาก ADT ครบแล้ว 2026-09-11 |
 | `Validate` มีบน tenant หรือไม่ | เช็คใน ADT |
-| BO รับ `BusinessTransactionType = RFPI` หรือไม่ | ลอง post จริง |
+| ~~BO รับ `BusinessTransactionType = RFPI` หรือไม่~~ | ✅ รับ — post ผ่านด้วย `RFPI` |
 | ~~บรรทัดภาษี (003/004) ส่งเป็น `_GLItems` + `TaxCode` ได้ไหม~~ | ❌ ไม่ได้ (`Tax statement item missing`) → rev 3 ใช้ `_TaxItems` + `MWS` + direct · รอผล post |
-| post จริงได้เลขเอกสาร | รอขั้น 5 |
+| ~~post จริงได้เลขเอกสาร~~ | ✅ `3300000024` (2026-09-11) |
+| console ว่างหลัง post — dump ตรงไหน | รอ Feed Reader |
+| เอกสารที่ได้เหมือน `3300000017` ไหม (PK / PC / WHT code / BTType) | รอ Q2+Q3+Q6 ของ `3300000024` |
 
 ## งานที่ยังค้าง
 
@@ -63,4 +67,5 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 3 | ~~export payment `3300000017` แบบ `SELECT *` (Q6)~~ | ✅ ทุกบรรทัดใส่เอง ไม่มี auto line |
 | 4 | ~~ยืนยันชื่อ field / node ของ `Post` parameter จาก ADT~~ | ✅ |
 | 5 | ~~เขียน `YCL_PAYMENT`~~ | 🟡 activate + simulate ผ่านแล้ว 2026-09-11 · ยังไม่ push abapGit |
-| 6 | post จริง (`gc_simulate = abap_false`) แล้วเทียบเอกสารที่ได้กับ `3300000017` | ⬜ |
+| 6 | ~~post จริง~~ | ✅ `3300000024` |
+| 7 | เทียบ `3300000024` กับ `3300000017` · แก้ dump หลัง commit · คืน `gc_simulate = abap_true` · push class ผ่าน abapGit | ⬜ |
