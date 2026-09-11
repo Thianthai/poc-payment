@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 13 · 2026-09-11 · `lv_simulate = abap_false` · `_GLItems` [3]/[4] + tax code **และ** `_TaxItems` amount 0 แบบ summary (ไม่มี item ref)
+revision 14 · 2026-09-11 · `lv_simulate = abap_false` · `_GLItems` [3]/[4] + tax code **และ** `_TaxItems` เลข item เดียวกัน (3/4) direct · ยอด ±419.93 base ±5,999
 
 ## แนวคิด
 
@@ -39,6 +39,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 11 | เปิด tax code `DM` / `O1` บน `_GLItems` [3]/[4] (re-test rev 2 แต่มี business place / tax date / RFPI ครบ) | rev 10: tax account บังคับ tax code |
 | 12 | + `_TaxItems` [6]/[7] amount 0 · base ±419.93 · `TaxItemAcctgDocItemRef` 3/4 · `MWAS` (ไม่ direct) | rev 11: G/L + tax code ต้องมี tax statement — ลองให้ครบทั้งคู่ |
 | 13 | ลบ `TaxItemAcctgDocItemRef` ออกจาก tax item | FF 817 `Taxes by item is not activated` — TH เป็น summary tax |
+| 14 | tax item เลข item = G/L line (3/4) · `IsDirectTaxPosting` · ยอด ±419.93 · base ±5,999 | `Entry of tax for DM 003 … is not possible because of tax base 0` — G/L line บน tax account หา base จาก tax item เลขเดียวกัน (แบบ BAPI direct tax) |
 
 ## Source
 
@@ -271,27 +272,29 @@ CLASS ycl_payment IMPLEMENTATION.
                                                journalentryitemamount = - lv_tax_amount
                                                taxbaseamount          = - lv_tax_base ) ) ) )
 
-          " rev 13: tax statement ของ G/L line [3]/[4] — amount 0 (ยอดอยู่บน G/L line แล้ว)
-          " ไม่ใส่ TaxItemAcctgDocItemRef — ใช้ได้เฉพาะ line-by-line tax (US/CA/BR) → FF 817 บน TH
+          " rev 14: direct tax — tax item ใช้ item number เดียวกับ G/L line บน tax account (แบบ BAPI)
+          "   tax item เป็นตัวถือ base 5,999 · ยอดใส่เท่ากับ G/L line
           _taxitems = VALUE #(
-            " [6] statement ของ [3] DM
-            ( glaccountlineitem      = '6'
-              taxcode                = is_tax_item-taxcode                " DM
-              taxitemclassification  = 'MWS'
-              conditiontype          = 'MWAS'
-              _currencyamount        = VALUE #( ( currencyrole           = '00'
-                                                  currency               = lv_currency
-                                                  journalentryitemamount = 0
-                                                  taxbaseamount          = lv_tax_amount ) ) )   " +419.93
-            " [7] statement ของ [4] O1
-            ( glaccountlineitem      = '7'
-              taxcode                = 'O1'
-              taxitemclassification  = 'MWS'
-              conditiontype          = 'MWAS'
-              _currencyamount        = VALUE #( ( currencyrole           = '00'
-                                                  currency               = lv_currency
-                                                  journalentryitemamount = 0
-                                                  taxbaseamount          = - lv_tax_amount ) ) ) )  " −419.93
+            " [3] คู่กับ G/L [3] DM
+            ( glaccountlineitem     = '3'
+              taxcode               = is_tax_item-taxcode                " DM
+              taxitemclassification = 'MWS'
+              conditiontype         = 'MWAS'
+              isdirecttaxposting    = abap_true
+              _currencyamount       = VALUE #( ( currencyrole           = '00'
+                                                 currency               = lv_currency
+                                                 journalentryitemamount = lv_tax_amount      " +419.93
+                                                 taxbaseamount          = lv_tax_base ) ) )  " +5,999
+            " [4] คู่กับ G/L [4] O1
+            ( glaccountlineitem     = '4'
+              taxcode               = 'O1'
+              taxitemclassification = 'MWS'
+              conditiontype         = 'MWAS'
+              isdirecttaxposting    = abap_true
+              _currencyamount       = VALUE #( ( currencyrole           = '00'
+                                                 currency               = lv_currency
+                                                 journalentryitemamount = - lv_tax_amount    " −419.93
+                                                 taxbaseamount          = - lv_tax_base ) ) ) )
 
           _aritems = VALUE #(
             " [5] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง

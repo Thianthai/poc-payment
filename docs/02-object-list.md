@@ -62,7 +62,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | ผู้ใช้ขอลอง rev 10: tax line เป็น `_GLItems` ระบุ tax account ตรง ๆ ไม่มี tax code | ❌ **post จริงครั้งที่ 11** — `G/L account 21082003 requires a valid tax code` → tax account บังคับ tax code · **ครบ 4 ทาง 4 กำแพง** (G/L ไม่มี code / G/L + code / tax item รวมใบ / tax item แยกใบ) |
 | 2026-09-11 | ผู้ใช้ขอลอง rev 11: `_GLItems` [3]/[4] + tax code DM/O1 (re-test rev 2 พร้อม business place) | ❌ **post จริงครั้งที่ 12** — `Tax statement item missing for tax code DM` เหมือน rev 2 → G/L + tax code = base line เสมอ · เติม tax item ก็จะไปชน deferred check ที่ bank (rev 3/6/9) → **ไม่มีทางเหลือ** เสนอปิด POC |
 | 2026-09-11 | ผู้ใช้ขอลอง rev 12: G/L + tax code + `_TaxItems` amount 0 อ้าง base line | ❌ **post จริงครั้งที่ 13** — FF 817 `Taxes by item is not activated and therefore not permitted in transfer` → `TaxItemAcctgDocItemRef` ใช้ได้เฉพาะ line-by-line tax (US/CA/BR) · ส่ง rev 13 ลบออก |
-| 2026-09-11 | ส่ง rev 13 | 🟡 รอผล post จริงครั้งที่ 14 |
+| 2026-09-11 | ส่ง rev 13 | ❌ **post จริงครั้งที่ 14** — `Entry of tax for DM 003 1000 0021082005 > is not possible because of tax base 0` → G/L line บน tax account = direct tax line หา base จาก tax item **เลข item เดียวกัน** (ของเราอยู่ item 6/7) · ผ่าน `Tax statement item missing` แล้ว |
+| 2026-09-11 | ส่ง rev 14: tax item เลข 3/4 ตรงกับ G/L line · direct · ยอด/base จริง | 🟡 รอผล post จริงครั้งที่ 15 |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
