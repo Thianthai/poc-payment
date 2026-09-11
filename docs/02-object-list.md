@@ -41,7 +41,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | reverse payment ตัวอย่าง `3300000017` ผ่าน Manage Journal Entries (reason 01) | ✅ reversal document **`3300000019`** · invoice `9400000005` ยัง open |
 | 2026-09-11 | **post จริงครั้งที่ 1** (`gc_simulate = abap_false`) | ❌ `FAILED` ไม่ dump — `Time dependent taxes: tax date has to be filled from caller` / `For tax code DM/O1, the key date 00/00/0000 does not fall in any validity period` → เพิ่ม `TaxDeterminationDate` ใน header · ไม่มี MSG เรื่อง `RFPI` |
 | 2026-09-11 | **post จริงครั้งที่ 2** (+ `TaxDeterminationDate`) | ❌ `FAILED` — `Tax statement item missing for tax code DM` (G/L line + tax code ถูกมองเป็น base line → ต้องย้าย [3]/[4] ไป `_TaxItems`) · `Enter a business place.` (Thai → `BusinessPlace = 0000` ตาม Q6) · tax date ผ่านแล้ว |
-| 2026-09-11 | ส่ง rev 3: tax line → `_TaxItems` (`MWS`, `IsDirectTaxPosting`) · `BusinessPlace 0000` ทุก G/L / AR line | 🟡 รอผล post จริงครั้งที่ 3 |
+| 2026-09-11 | ส่ง rev 3: tax line → `_TaxItems` (`MWS`, `IsDirectTaxPosting`) · `BusinessPlace 0000` ทุก G/L / AR line | ✅ ส่งแล้ว |
+| 2026-09-11 | **post จริงครั้งที่ 3** (rev 3) | ❌ `FAILED` — `G/L account item without tax code in document $ 1 with deferred taxes` · tax statement / business place ผ่านแล้ว · = กฎ deferred tax: ทุก G/L line ต้องมี tax code → บรรทัด DM/O1 ของตัวอย่างเป็นของที่ Post Incoming Payments generate ตอน clear ไม่ใช่ post มือ · รอผู้ใช้เลือก A (ตัด tax line เหลือ 3 บรรทัด) / B (ใส่ tax code 0% บน bank/WHT) |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 

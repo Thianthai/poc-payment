@@ -59,6 +59,10 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   `Tax statement item missing for tax code DM` → ต้องใช้ `_TaxItems` (2026-09-11)
 - **Thai localization ต้องส่ง `BusinessPlace`** (`0000` = head office ตามเอกสารตัวอย่าง)
   ไม่งั้น `Enter a business place.` (2026-09-11)
+- **เอกสารที่มี deferred tax code (`DM`) ทุก G/L line ต้องมี tax code** —
+  `G/L account item without tax code in document with deferred taxes` (2026-09-11)
+  → บรรทัดโอน DM→O1 ในเอกสารตัวอย่าง `3300000017` เป็นของที่ app Post Incoming Payments
+  generate ตอน **clear** invoice ไม่ใช่บรรทัดที่ post มือ · API post ไม่ clear จึงทำซ้ำไม่ได้
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 
