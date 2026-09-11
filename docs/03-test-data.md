@@ -14,7 +14,7 @@
 | `gc_currency` | สกุลเงินของเอกสาร | `TransactionCurrency` |
 | `gc_reference` | reference (XBLNR) | `DocumentReferenceID` |
 | `gc_header_text` | header text (BKTXT) | `AccountingDocumentHeaderText` |
-| `gc_business_transaction` | fix เป็น `RFBU` | — |
+| `gc_business_transaction` | เอกสารตัวอย่างเป็น **`RFPI`** — ลองค่านี้ก่อน ถ้า API ปฏิเสธค่อยถอยไป `RFBU` | `BusinessTransactionType` (ACDOCA) |
 | `gc_simulate` | `abap_true` = พิมพ์ payload เฉย ๆ · `abap_false` = post จริง | เริ่มที่ `abap_true` เสมอ |
 
 > `DocumentDate` / `PostingDate` class ใช้วันปัจจุบัน ถ้าต้องการ fix วันที่เอง
@@ -44,7 +44,29 @@
 บรรทัดใน ACDOCA ที่ `AccountingDocumentItem = 000` คือบรรทัดที่ document splitting
 สร้างเอง **ไม่ต้องส่งเข้า API** — แต่ export มาด้วยเพื่อเทียบผลหลัง post
 
-## 3. รูปแบบที่สะดวกที่สุดสำหรับส่งข้อมูลมา
+## 3. ค่าจริงจากเอกสารตัวอย่าง `3300000017` (export แล้ว 2026-09-11)
+
+ตารางเต็มอยู่ที่ [04-data-export-sql.md](04-data-export-sql.md) · สรุปที่จะ fix ลง `YCL_PAYMENT`:
+
+```
+company_code   : 1000
+doc_type       : DZ
+currency       : THB
+bus_trans_type : RFPI  (fallback RFBU)
+reference      : 09080007  → POC จะ generate ใหม่ให้ unique ต่อรอบ
+header_text    : (ว่าง)
+
+_GLItems
+  1  0011092001  +6238.96  text 'รับผ่านช่องทาง mobile banking'  assignment 20260909
+                           house bank BBL01 / CA001  value date = posting date
+  2  0011047003   +179.97  assignment 20260909  value date = posting date
+  3  0021082005   +419.93  tax code DM
+  4  0021082003   -419.93  tax code O1  assignment 94000000052026003
+_APARItems
+  5  customer 0001000082  -6418.93
+```
+
+## 4. รูปแบบที่สะดวกที่สุดสำหรับส่งข้อมูลมา
 
 รัน query ใน [04-data-export-sql.md](04-data-export-sql.md) แล้ว paste ผลจาก ADT
 console / SQL console มาตรง ๆ ได้เลย (Q1 header + Q2 items + Q3 ACDOCA)

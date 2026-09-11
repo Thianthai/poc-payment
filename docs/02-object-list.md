@@ -32,6 +32,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 |---|---|---|
 | 2026-09-11 | เปิด project · confirm scope (post only, no clearing) + ชื่อ object | ✅ |
 | 2026-09-11 | สร้าง `YPOC_PAYMENT` + link abapGit + push baseline | ✅ `.abapgit.xml` + `package.devc.xml` จาก SAP |
+| 2026-09-11 | export เอกสารตัวอย่าง `3300000017` ด้วย Q1–Q3 | ✅ ทุก field compile ผ่าน · 5 บรรทัด (4 G/L + 1 customer) · `BusinessTransactionType = RFPI` |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -39,12 +40,14 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 |---|---|
 | ชื่อ field จริงของ `%param` / `_GLItems` / `_APARItems` | เช็ค code completion ใน ADT |
 | `Validate` มีบน tenant หรือไม่ | เช็คใน ADT |
-| เอกสารตัวอย่างมีบรรทัดอะไรบ้าง | รอผล export จาก docs/04 |
+| BO รับ `BusinessTransactionType = RFPI` หรือไม่ | ลอง post จริง |
+| บรรทัดภาษี (003/004) ส่งเป็น `_GLItems` + `TaxCode` ได้ไหม หรือต้องใช้ `_ProductTaxItems` | ลอง post จริง |
 | post จริงได้เลขเอกสาร | รอขั้น 5 |
 
 ## งานที่ยังค้าง
 
 | # | เรื่อง | สถานะ |
 |---|---|---|
-| 1 | export เอกสารตัวอย่าง | ⬜ |
-| 2 | เขียน `YCL_PAYMENT` | ⬜ รอข้อ 1 |
+| 1 | ~~export payment ตัวอย่าง~~ | ✅ |
+| 2 | export **invoice** `9400000005` (Q1–Q5) — requirement ใหม่: payment derive จาก invoice | ⬜ |
+| 3 | เขียน `YCL_PAYMENT` | ⬜ รอข้อ 2 + confirm โครง class |

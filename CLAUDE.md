@@ -13,7 +13,11 @@ console class บน S/4HANA Cloud Public Edition เพื่อ post **incomin
 - **ไม่ clear open item** — ตกลงแล้ว 2026-09-11 ว่า POC นี้ post อย่างเดียว
   (`I_JournalEntryTP~Post` ไม่ clear ให้อยู่แล้ว · clearing เป็นเรื่องของ
   [`poc-clearing`](https://github.com/Thianthai/poc-clearing))
-- ข้อมูลทดสอบ fix ใน code ทั้งหมด (constant + internal table ใน private section)
+- **Input คือ invoice** (company code + เลขเอกสาร + ปี) — class อ่านบรรทัด invoice จาก
+  released CDS แล้ว derive บรรทัด payment (customer / deferred tax → output tax / WHT / bank)
+  ไม่ใช่ fix 5 บรรทัดลง constant · ตัวอย่าง invoice `9400000005` → payment `3300000017`
+  (requirement เพิ่ม 2026-09-11)
+- ค่าที่ไม่ได้มาจาก invoice (house bank, tax code mapping, อัตรา WHT ถ้า fix) เป็น constant
 - ไม่มี communication scenario / arrangement — เรียก BO ในเครื่อง ไม่มี HTTP
 
 ## Naming ที่ใช้ใน project นี้

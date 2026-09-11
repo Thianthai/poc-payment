@@ -27,7 +27,8 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 
 | | |
 |---|---|
-| ทำ | post เอกสาร incoming payment (คาดว่า doc type `DZ`) — Dr bank / Cr customer |
+| ทำ | post เอกสาร incoming payment (doc type `DZ`) — Dr bank / Cr customer |
+| Input | **invoice** (company code + เลขเอกสาร + ปี) — class อ่านบรรทัดของ invoice จาก CDS แล้ว derive บรรทัด payment เอง (เพิ่ม 2026-09-11 · ตัวอย่าง: invoice `9400000005` → payment `3300000017`) |
 | **ไม่ทำ** | **clear open item ของ invoice** — `I_JournalEntryTP~Post` ไม่ clear ให้ (SAP ยืนยันเอง) ถ้าจะ clear ต้องต่อด้วย Clearing API จาก POC ก่อนหน้าเป็นอีกขั้น |
 | Simulate | `gc_simulate = abap_true` พิมพ์ payload ออก console ไม่ยิง `EXECUTE post` · เปลี่ยนเป็น `abap_false` เมื่อจะ post จริง (`Post` ไม่มี test-run flag ในตัว) |
 
