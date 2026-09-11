@@ -36,6 +36,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | requirement เพิ่ม: payment ต้อง derive จาก invoice · export invoice `9400000005` Q1–Q5 | ✅ invoice open · customer line มี `WithholdingTaxCode XX` · deferred tax line เป็น `ItemType T` base 5,999 |
 | 2026-09-11 | export payment `3300000017` แบบ `SELECT *` (Q6) | ✅ ทั้ง 5 บรรทัดใส่เอง (`IsAutomaticallyCreated` ว่าง) · WHT line เป็น G/L ธรรมดา · tax line เป็น G/L + tax code |
 | 2026-09-11 | ยืนยัน field ของ `Post` parameter จาก ADT (4 abstract entity) · ส่ง code `YCL_PAYMENT` รอบแรก | ✅ docs/05 · `gc_simulate = abap_true` |
+| 2026-09-11 | activate `YCL_PAYMENT` | ✅ หลังแก้ 2 จุด: inline `DATA( )` ใน IMPORTING ของ functional call ใน `IF` ใช้ไม่ได้ · `acpi_zuonr` ไม่ released → ใช้ `TYPE c LENGTH 18` เอง |
+| 2026-09-11 | รัน F9 simulate (invoice `9400000005`) | ✅ payload 5 บรรทัดตรงกับ `3300000017` ทุก field · balance 0 · **ฝั่ง derive ปิดจ๊อบ** |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -55,4 +57,5 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2 | ~~export **invoice** `9400000005` (Q1–Q5)~~ | ✅ mapping อยู่ใน docs/04 |
 | 3 | ~~export payment `3300000017` แบบ `SELECT *` (Q6)~~ | ✅ ทุกบรรทัดใส่เอง ไม่มี auto line |
 | 4 | ~~ยืนยันชื่อ field / node ของ `Post` parameter จาก ADT~~ | ✅ |
-| 5 | เขียน `YCL_PAYMENT` | 🟡 ส่ง code รอบแรก 2026-09-11 (docs/05) · รอผู้ใช้ activate + รัน simulate |
+| 5 | ~~เขียน `YCL_PAYMENT`~~ | 🟡 activate + simulate ผ่านแล้ว 2026-09-11 · ยังไม่ push abapGit |
+| 6 | post จริง (`gc_simulate = abap_false`) แล้วเทียบเอกสารที่ได้กับ `3300000017` | ⬜ |
