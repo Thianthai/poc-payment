@@ -347,3 +347,35 @@ ACDOCA: 3 บรรทัด · `ProfitCenter DUMMY` · `Segment JASGROUP` · `B
 | `WithholdingTaxCode` | `XX` (base/amount 0) | ว่าง | ❌ API ไม่ derive จาก customer master — อาจลอง `_WithHoldingTaxItems` |
 | header: DZ / RFPI / BKPFF / business place / PC / segment | | เหมือน | ✅ |
 
+---
+
+## ผล Q7 / Q8 (2026-09-11) — หาทางใส่บรรทัด DM/O1
+
+### Q7 — G/L master (`I_GLAccountInCompanyCode`, company code 1000)
+
+| G/L | `TaxCategory` | `TaxCodeIsRequired` | `IsAutomaticallyPosted` | `IsOpenItemManaged` | `PlanningLevel` | FSG | สรุป |
+|---|---|---|---|---|---|---|---|
+| `0011092001` bank | (ว่าง) | | | X | `B0` | `ZB05` | **รับ tax code ไม่ได้** |
+| `0011047003` WHT | `*` | X | | X | | `ZB14` | รับ tax code ได้ (config บอกว่าควรมี) |
+| `0021082003` output tax | `>` | | (ว่าง) | X | | `YB01` | post ตรงได้ |
+| `0021082005` deferred tax | `>` | | (ว่าง) | X | | `YB01` | post ตรงได้ |
+
+### Q8 — tax code ที่เคยใช้บน company code 1000
+
+| Code | Items | รวม THB | อ่านว่า |
+|---|---|---:|---|
+| `DM` | 231 | 660,649,091.95 | deferred output 7% (ตระกูล D = deferred: `D1` 13 · `D4` 12 · `D5` 6 · `DN` 3) |
+| `O1` | 158 | −660,625,854.05 | output 7% — target ของ `DM` |
+| `O0` | 4 | 0.00 | output 0% |
+| `OX` | 33 | −1,000.00 | output exempt |
+| `V0` 22 · `V1` 137 · `V6` 1 · `VX` 22 | | | input |
+| `WP` 5 · `WS` 24 · `**` 1 | | | ไม่ทราบ ไม่แตะ |
+
+### ข้อสรุป
+
+- "ใส่ tax code ทุก G/L line" ทำไม่ได้ — บรรทัด bank tax category ว่าง
+- สมมติฐาน: check `G/L account item without tax code in document with deferred taxes`
+  ดูเฉพาะบัญชี tax-relevant → ตัวที่ fail รอบ 3 คือ WHT line ไม่ใช่ bank
+  → rev 6 ทดลอง: WHT line ใส่ `O0` · bank ไม่ใส่ · คืน `_TaxItems` DM/O1
+- ถ้ายัง fail → ทาง 2: เอกสารโอน deferred tax แยก (`_TaxItems` อย่างเดียว)
+
