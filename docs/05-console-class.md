@@ -364,7 +364,7 @@ CLASS ycl_payment IMPLEMENTATION.
     DATA(lv_commit_subrc) = sy-subrc.
 
     LOOP AT ls_commit_reported-journalentry INTO DATA(ls_commit_msg).
-      io_out->write( |  MSG (commit) [{ ls_commit_msg-%cid }]: { ls_commit_msg-%msg->if_message~get_text( ) }| ).
+      io_out->write( |  MSG (commit) [{ ls_commit_msg-%pid }]: { ls_commit_msg-%msg->if_message~get_text( ) }| ).
     ENDLOOP.
 
     IF lv_commit_subrc <> 0 OR ls_commit_failed-journalentry IS NOT INITIAL.
