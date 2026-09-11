@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 14 · 2026-09-11 · `lv_simulate = abap_false` · `_GLItems` [3]/[4] + tax code **และ** `_TaxItems` เลข item เดียวกัน (3/4) direct · ยอด ±419.93 base ±5,999
+revision 15 · 2026-09-11 · `lv_simulate = abap_false` · `_GLItems` [3]/[4] + tax code **และ** `_TaxItems` [6]/[7] direct amount 0 base ±5,999
 
 ## แนวคิด
 
@@ -40,6 +40,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 12 | + `_TaxItems` [6]/[7] amount 0 · base ±419.93 · `TaxItemAcctgDocItemRef` 3/4 · `MWAS` (ไม่ direct) | rev 11: G/L + tax code ต้องมี tax statement — ลองให้ครบทั้งคู่ |
 | 13 | ลบ `TaxItemAcctgDocItemRef` ออกจาก tax item | FF 817 `Taxes by item is not activated` — TH เป็น summary tax |
 | 14 | tax item เลข item = G/L line (3/4) · `IsDirectTaxPosting` · ยอด ±419.93 · base ±5,999 | `Entry of tax for DM 003 … is not possible because of tax base 0` — G/L line บน tax account หา base จาก tax item เลขเดียวกัน (แบบ BAPI direct tax) |
+| 15 | tax item เลข 6/7 · direct · amount 0 · base ±5,999 | rev 14: `FI/CO interface: Line item entered several times` — item number ต้อง unique ข้าม node |
 
 ## Source
 
@@ -272,28 +273,26 @@ CLASS ycl_payment IMPLEMENTATION.
                                                journalentryitemamount = - lv_tax_amount
                                                taxbaseamount          = - lv_tax_base ) ) ) )
 
-          " rev 14: direct tax — tax item ใช้ item number เดียวกับ G/L line บน tax account (แบบ BAPI)
-          "   tax item เป็นตัวถือ base 5,999 · ยอดใส่เท่ากับ G/L line
+          " rev 15: G/L [3]/[4] ถือยอด · tax item [6]/[7] direct amount 0 ถือ base 5,999
+          "   (rev 14: เลข item ซ้ำกับ G/L → "Line item entered several times" — BO ไม่รวมบรรทัดแบบ BAPI)
           _taxitems = VALUE #(
-            " [3] คู่กับ G/L [3] DM
-            ( glaccountlineitem     = '3'
+            ( glaccountlineitem     = '6'
               taxcode               = is_tax_item-taxcode                " DM
               taxitemclassification = 'MWS'
               conditiontype         = 'MWAS'
               isdirecttaxposting    = abap_true
               _currencyamount       = VALUE #( ( currencyrole           = '00'
                                                  currency               = lv_currency
-                                                 journalentryitemamount = lv_tax_amount      " +419.93
-                                                 taxbaseamount          = lv_tax_base ) ) )  " +5,999
-            " [4] คู่กับ G/L [4] O1
-            ( glaccountlineitem     = '4'
+                                                 journalentryitemamount = 0
+                                                 taxbaseamount          = lv_tax_base ) ) )   " +5,999
+            ( glaccountlineitem     = '7'
               taxcode               = 'O1'
               taxitemclassification = 'MWS'
               conditiontype         = 'MWAS'
               isdirecttaxposting    = abap_true
               _currencyamount       = VALUE #( ( currencyrole           = '00'
                                                  currency               = lv_currency
-                                                 journalentryitemamount = - lv_tax_amount    " −419.93
+                                                 journalentryitemamount = 0
                                                  taxbaseamount          = - lv_tax_base ) ) ) )
 
           _aritems = VALUE #(

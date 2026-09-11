@@ -63,7 +63,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | ผู้ใช้ขอลอง rev 11: `_GLItems` [3]/[4] + tax code DM/O1 (re-test rev 2 พร้อม business place) | ❌ **post จริงครั้งที่ 12** — `Tax statement item missing for tax code DM` เหมือน rev 2 → G/L + tax code = base line เสมอ · เติม tax item ก็จะไปชน deferred check ที่ bank (rev 3/6/9) → **ไม่มีทางเหลือ** เสนอปิด POC |
 | 2026-09-11 | ผู้ใช้ขอลอง rev 12: G/L + tax code + `_TaxItems` amount 0 อ้าง base line | ❌ **post จริงครั้งที่ 13** — FF 817 `Taxes by item is not activated and therefore not permitted in transfer` → `TaxItemAcctgDocItemRef` ใช้ได้เฉพาะ line-by-line tax (US/CA/BR) · ส่ง rev 13 ลบออก |
 | 2026-09-11 | ส่ง rev 13 | ❌ **post จริงครั้งที่ 14** — `Entry of tax for DM 003 1000 0021082005 > is not possible because of tax base 0` → G/L line บน tax account = direct tax line หา base จาก tax item **เลข item เดียวกัน** (ของเราอยู่ item 6/7) · ผ่าน `Tax statement item missing` แล้ว |
-| 2026-09-11 | ส่ง rev 14: tax item เลข 3/4 ตรงกับ G/L line · direct · ยอด/base จริง | 🟡 รอผล post จริงครั้งที่ 15 |
+| 2026-09-11 | ส่ง rev 14: tax item เลข 3/4 ตรงกับ G/L line · direct · ยอด/base จริง | ❌ **post จริงครั้งที่ 15** — `FI/CO interface: Line item entered several times` → item number ต้อง unique ข้าม node · BO ไม่รวม G/L + tax item แบบ BAPI |
+| 2026-09-11 | ส่ง rev 15: tax item 6/7 direct amount 0 base ±5,999 (ตัวเลือกสุดท้าย) | 🟡 รอผล post จริงครั้งที่ 16 |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
