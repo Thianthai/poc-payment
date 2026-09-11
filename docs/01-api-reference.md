@@ -179,6 +179,7 @@ SAP เองจัด `I_JournalEntryTP` / Journal Entry – Post ไว้ส�
 | API | bank line | customer PK | clear | โอน deferred tax | หมายเหตุ |
 |---|---|---|---|---|---|
 | `I_JournalEntryTP` | ✅ | **11** | ❌ | ❌ | POC นี้ |
+| Journal Entry – Post SOAP (`JournalEntryBulkCreationRequest_In` async / `JournalEntryCreateRequestConfirmation_In` sync) | ✅ | **11** | ❌ | ❌ | **เครื่องยนต์เดียวกับ `I_JournalEntryTP`** — doc ระบุ DebtorItem credit = 11 · ต่างแค่เรียกผ่าน SOAP + `SAP_COM_0002` |
 | Journal Entry – Clearing (SOAP) | ❌ | — | ✅ | ตอน clear | POC clearing |
 | **Bank Statement** (`SAP_COM_0316`, scope 1EG) | ✅ | **15** | ✅ | ✅ | ทางมาตรฐานสำหรับเงินโอนเข้า bank · ต้อง config EBS posting rule |
 | Manage Automatic Payments (F110) | ✅ | 15 | ✅ | | direct debit เท่านั้น |
