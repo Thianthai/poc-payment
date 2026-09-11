@@ -168,3 +168,19 @@ posting key ที่ระบบสร้างให้: G/L เดบิต `
 - ไม่มี test-run flag → simulate ต้องทำในโค้ดเอง
 - ไม่สร้าง one-time customer (SAP Note 3637431)
 - บน on-premise / private edition SAP แนะนำให้ใช้ BAPI แทน — BO นี้เหมาะกับ public edition
+
+## API ทางเลือกบน Public Edition (สำรวจ 2026-09-11 หลังพบว่า PK 15 ทำไม่ได้)
+
+ไม่มี API "post incoming payment" ตรง ๆ — community ลงเอยที่ `I_JournalEntryTP` เหมือนกัน
+([Q&A 2025](https://community.sap.com/t5/financial-management-q-a/sap-s-4-public-cloud-post-incoming-payment-integration/qaq-p/14060266)) ·
+SAP เองจัด `I_JournalEntryTP` / Journal Entry – Post ไว้สำหรับ "ad-hoc payment on account"
+([blog 2025-11](https://community.sap.com/t5/financial-management-blog-posts-by-sap/sap-s-4hana-cloud-for-customer-payments-transition-and-future-with-apis/ba-p/14242704))
+
+| API | bank line | customer PK | clear | โอน deferred tax | หมายเหตุ |
+|---|---|---|---|---|---|
+| `I_JournalEntryTP` | ✅ | **11** | ❌ | ❌ | POC นี้ |
+| Journal Entry – Clearing (SOAP) | ❌ | — | ✅ | ตอน clear | POC clearing |
+| **Bank Statement** (`SAP_COM_0316`, scope 1EG) | ✅ | **15** | ✅ | ✅ | ทางมาตรฐานสำหรับเงินโอนเข้า bank · ต้อง config EBS posting rule |
+| Manage Automatic Payments (F110) | ✅ | 15 | ✅ | | direct debit เท่านั้น |
+| EBPP Payment Request (2508.02+) | | | | | portal + Digital Payments add-on |
+
