@@ -61,6 +61,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | ผู้ใช้ขอลอง rev 9: เอกสารเดียว 5 บรรทัด เรียง customer/WHT/DM/O1/bank | ❌ **post จริงครั้งที่ 10** — `G/L account item without tax code in document with deferred taxes` เหมือนเดิม → ลำดับไม่มีผล · สรุป: บน TH `I_JournalEntryTP` post DM→O1 ไม่ได้ทั้งรวมใบและแยกใบ |
 | 2026-09-11 | ผู้ใช้ขอลอง rev 10: tax line เป็น `_GLItems` ระบุ tax account ตรง ๆ ไม่มี tax code | ❌ **post จริงครั้งที่ 11** — `G/L account 21082003 requires a valid tax code` → tax account บังคับ tax code · **ครบ 4 ทาง 4 กำแพง** (G/L ไม่มี code / G/L + code / tax item รวมใบ / tax item แยกใบ) |
 | 2026-09-11 | ผู้ใช้ขอลอง rev 11: `_GLItems` [3]/[4] + tax code DM/O1 (re-test rev 2 พร้อม business place) | ❌ **post จริงครั้งที่ 12** — `Tax statement item missing for tax code DM` เหมือน rev 2 → G/L + tax code = base line เสมอ · เติม tax item ก็จะไปชน deferred check ที่ bank (rev 3/6/9) → **ไม่มีทางเหลือ** เสนอปิด POC |
+| 2026-09-11 | ผู้ใช้ขอลอง rev 12: G/L + tax code + `_TaxItems` amount 0 อ้าง base line | 🟡 รอผล post จริงครั้งที่ 13 |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 

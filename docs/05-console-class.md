@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 11 · 2026-09-11 · `lv_simulate = abap_false` · เอกสารเดียว 5 บรรทัด · tax line เป็น `_GLItems` ระบุ G/L ตรง ๆ **+ tax code DM/O1** (ไม่มี `_TaxItems`)
+revision 12 · 2026-09-11 · `lv_simulate = abap_false` · `_GLItems` [3]/[4] + tax code **และ** `_TaxItems` amount 0 อ้าง `TaxItemAcctgDocItemRef` (ลูกเล่นสุดท้าย)
 
 ## แนวคิด
 
@@ -37,6 +37,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 9 | กลับเป็นเอกสารเดียว 5 บรรทัด · `GLAccountLineItem` = customer 1 · WHT 2 · DM 3 · O1 4 · bank 5 · WHT ไม่มี tax code | ผู้ใช้ขอทดสอบว่าลำดับบรรทัดมีผลกับ check deferred tax ไหม |
 | 10 | ไม่มี `_TaxItems` · บรรทัด DM/O1 เป็น `_GLItems` ระบุ `0021082005` / `0021082003` ตรง ๆ **ไม่ใส่ tax code** (มี comment ให้เปิดถ้าจะ re-test แบบมี tax code = rev 2) | ผู้ใช้ขอทดสอบ direct posting ไป tax account |
 | 11 | เปิด tax code `DM` / `O1` บน `_GLItems` [3]/[4] (re-test rev 2 แต่มี business place / tax date / RFPI ครบ) | rev 10: tax account บังคับ tax code |
+| 12 | + `_TaxItems` [6]/[7] amount 0 · base ±419.93 · `TaxItemAcctgDocItemRef` 3/4 · `MWAS` (ไม่ direct) | rev 11: G/L + tax code ต้องมี tax statement — ลองให้ครบทั้งคู่ |
 
 ## Source
 
@@ -268,6 +269,29 @@ CLASS ycl_payment IMPLEMENTATION.
                                                currency               = lv_currency
                                                journalentryitemamount = - lv_tax_amount
                                                taxbaseamount          = - lv_tax_base ) ) ) )
+
+          " rev 12: tax statement ของ G/L line [3]/[4] — amount 0 (ยอดอยู่บน G/L line แล้ว)
+          _taxitems = VALUE #(
+            " [6] statement ของ [3] DM
+            ( glaccountlineitem      = '6'
+              taxcode                = is_tax_item-taxcode                " DM
+              taxitemclassification  = 'MWS'
+              conditiontype          = 'MWAS'
+              taxitemacctgdocitemref = '3'
+              _currencyamount        = VALUE #( ( currencyrole           = '00'
+                                                  currency               = lv_currency
+                                                  journalentryitemamount = 0
+                                                  taxbaseamount          = lv_tax_amount ) ) )   " +419.93
+            " [7] statement ของ [4] O1
+            ( glaccountlineitem      = '7'
+              taxcode                = 'O1'
+              taxitemclassification  = 'MWS'
+              conditiontype          = 'MWAS'
+              taxitemacctgdocitemref = '4'
+              _currencyamount        = VALUE #( ( currencyrole           = '00'
+                                                  currency               = lv_currency
+                                                  journalentryitemamount = 0
+                                                  taxbaseamount          = - lv_tax_amount ) ) ) )  " −419.93
 
           _aritems = VALUE #(
             " [5] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
