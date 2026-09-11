@@ -47,7 +47,18 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   (node จริงคือ `_GLItems` / `_ARItems` / `_APItems` / `_TaxItems` / `_WithHoldingTaxItems`
   ไม่ใช่ `_APARItems` / `_ProductTaxItems` ที่ community เขียน)
 
-## จุดที่พลาดง่าย (รวบรวมจาก community · ยังไม่ได้เจอเองบน tenant)
+## จุดที่พลาดง่าย
+
+### เจอเองบน tenant แล้ว
+
+- **`TaxDeterminationDate` บังคับ** ถ้า company code เปิด time-dependent tax — ไม่ส่งจะได้
+  `Time dependent taxes: tax date has to be filled from caller` +
+  `For tax code DM, the key date 00/00/0000 does not fall in any validity period` (2026-09-11)
+- `EXECUTE post` ที่ fail ได้ `FAILED` + `REPORTED` ปกติ **ไม่ dump** (อย่างน้อยเคส validation)
+- inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
+- data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
+
+### จากชุมชน (ยังไม่ได้เจอเอง)
 
 - `Post` เรียกจาก **console class / local class ได้** (SAP doc มีตัวอย่าง)
   ที่ห้ามคือเรียกจาก RAP action / determination นอก save sequence ของ BO ตัวเอง

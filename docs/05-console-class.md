@@ -227,6 +227,7 @@ CLASS ycl_payment IMPLEMENTATION.
           documentdate            = lv_today
           postingdate             = lv_today
           documentreferenceid     = lv_reference
+          taxdeterminationdate    = lv_today                          " time-dependent tax เปิดอยู่ → ต้องส่ง ไม่งั้น "tax date has to be filled from caller"
           createdbyuser           = cl_abap_context_info=>get_user_technical_name( )
 
           _glitems = VALUE #(

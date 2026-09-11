@@ -68,7 +68,8 @@ static factory save ( finalize, adjustnumbers ) action ( authorization : none ) 
 | `AccountingDocument` | `belnr_d` | external number — ไม่ใช้ |
 | `LedgerGroup` | `fagl_ldgrp` | ไม่ใช้ |
 | `InvoiceReferenceDocument` | `awkey_reb` | ไม่ใช้ (ไม่ clear) |
-| `TaxReportingDate` / `TaxDeterminationDate` / `TaxFulfillmentDate` | | ไม่ใช้ |
+| `TaxDeterminationDate` | `txdat` | ✅ = posting date — **บังคับ** เพราะ company code เปิด time-dependent tax (เจอจริง 2026-09-11: `tax date has to be filled from caller`) |
+| `TaxReportingDate` / `TaxFulfillmentDate` | | ไม่ใช้ |
 | `InvoiceReceiptDate` · `ExchangeRateDate` · `IsNegativePosting` · `PostingFiscalPeriod` | | ไม่ใช้ |
 | `Reference1InDocumentHeader` / `Reference2InDocumentHeader` | | ไม่ใช้ |
 | `JrnlEntryCntrySpecificRef1..5` / `Date1..5` / `BP1..2` | | ไม่ใช้ |

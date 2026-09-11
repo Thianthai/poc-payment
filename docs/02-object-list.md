@@ -39,6 +39,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | activate `YCL_PAYMENT` | ✅ หลังแก้ 2 จุด: inline `DATA( )` ใน IMPORTING ของ functional call ใน `IF` ใช้ไม่ได้ · `acpi_zuonr` ไม่ released → ใช้ `TYPE c LENGTH 18` เอง |
 | 2026-09-11 | รัน F9 simulate (invoice `9400000005`) | ✅ payload 5 บรรทัดตรงกับ `3300000017` ทุก field · balance 0 · **ฝั่ง derive ปิดจ๊อบ** |
 | 2026-09-11 | reverse payment ตัวอย่าง `3300000017` ผ่าน Manage Journal Entries (reason 01) | ✅ reversal document **`3300000019`** · invoice `9400000005` ยัง open |
+| 2026-09-11 | **post จริงครั้งที่ 1** (`gc_simulate = abap_false`) | ❌ `FAILED` ไม่ dump — `Time dependent taxes: tax date has to be filled from caller` / `For tax code DM/O1, the key date 00/00/0000 does not fall in any validity period` → เพิ่ม `TaxDeterminationDate` ใน header · ไม่มี MSG เรื่อง `RFPI` |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
