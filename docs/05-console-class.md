@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 6b · 2026-09-11 · `lv_simulate = abap_false` · logic = rev 6 แต่**ถอด `CONSTANTS` ทั้งหมด** เขียนค่าตรงจุดที่ใช้ (ผู้ใช้ขอเพื่อ investigate)
+revision 7 · 2026-09-11 · `lv_simulate = abap_false` · **2 เอกสาร**: DZ 3 บรรทัด + SA `_TaxItems` ล้วน (DM→O1)
 
 ## แนวคิด
 
@@ -15,11 +15,11 @@ main           read → build → print → (gc_simulate = abap_false) post
 
 | จาก invoice | ไป payment |
 |---|---|
-| AR line: `Customer`, amount +6,418.93 | `_ARItems[5]` amount −6,418.93 · `BusinessPlace 0000` |
-| tax line (`ItemType T`): `TaxCode DM`, amount −419.93, base −5,999 | `_TaxItems[3]` `DM` +419.93 base +5,999 · `MWS` · direct |
-| (ยอดเดียวกัน) | `_TaxItems[4]` `O1` −419.93 base −5,999 · `MWS` · direct |
-| base 5,999 × `gc_wht_rate_percent` 3% | `_GLItems[2]` `0011047003` +179.97 · `TaxCode O0` (rev 6) |
-| ลูกหนี้ − WHT | `_GLItems[1]` `0011092001` +6,238.96 · `BBL01`/`CA001` |
+| AR line: `Customer`, amount +6,418.93 | **ใบ 1** `_ARItems[3]` amount −6,418.93 · `BusinessPlace 0000` |
+| tax line (`ItemType T`): `TaxCode DM`, amount −419.93, base −5,999 | **ใบ 2** `_TaxItems[1]` `DM` +419.93 base +5,999 · `MWS` · direct |
+| (ยอดเดียวกัน) | **ใบ 2** `_TaxItems[2]` `O1` −419.93 base −5,999 · `MWS` · direct |
+| base 5,999 × 3% | **ใบ 1** `_GLItems[2]` `0011047003` +179.97 |
+| ลูกหนี้ − WHT | **ใบ 1** `_GLItems[1]` `0011092001` +6,238.96 · `BBL01`/`CA001` |
 
 ประวัติแก้:
 
@@ -32,6 +32,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 5 | ตัด `CONVERT KEY` ออกจาก `post_entry` (พิมพ์ `%pid` + `SELECT` ด้วย reference แทน) · `gc_simulate` กลับเป็น `abap_true` | dump `BEHAVIOR_STATEMENT_ILLEGAL` หลัง commit — `CONVERT KEY` ใช้ได้เฉพาะ save phase ของ RAP |
 | 6 | คืน `_TaxItems` DM/O1 · WHT line [2] ใส่ `TaxCode O0` · customer กลับเป็น `'5'` | ทดลองสมมติฐาน: check deferred tax ดูเฉพาะบัญชี tax-relevant (bank ใส่ tax code ไม่ได้อยู่แล้ว) |
 | 6b | ถอด `CONSTANTS` ทั้งหมด → literal ตรงจุดที่ใช้ · `gc_simulate` → `lv_simulate` ใน `main` | ผู้ใช้ขอให้อ่านง่ายตอน investigate (logic ไม่เปลี่ยน) |
+| 7 | `build_entry` คืน 2 entries: DZ (bank/WHT/customer · WHT ไม่มี tax code) + `SA` `RFBU` มีแต่ `_TaxItems` DM/O1 · reference ใบ 2 = ใบ 1 + `T` · `post_entry` query `LIKE` ได้ทั้งคู่ | เอกสารเดียวชนกฎ deferred tax ที่บรรทัด bank → แยกใบ |
 
 ## Source
 
@@ -191,6 +192,7 @@ CLASS ycl_payment IMPLEMENTATION.
     DATA(lv_now)       = cl_abap_context_info=>get_system_time( ).
     DATA(lv_currency)  = is_ar_item-transactioncurrency.                " THB
     DATA(lv_date_text) = CONV string( lv_today ).
+    DATA(lv_user)      = cl_abap_context_info=>get_user_technical_name( ).
 
     " ยอด: เดบิต = บวก · เครดิต = ลบ → กลับเครื่องหมายจาก invoice
     lv_customer_amount = - is_ar_item-amountintransactioncurrency.       " Cr ลูกหนี้      −6,418.93
@@ -202,23 +204,27 @@ CLASS ycl_payment IMPLEMENTATION.
     " assignment ตามเอกสารตัวอย่าง: bank/WHT = posting date
     DATA(lv_assignment_date) = CONV ty_assignment( lv_today ).
 
-    " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (16 chars) เช่น POC0911075532
-    DATA(lv_reference) = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
+    " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (16 chars)
+    " เอกสาร 1 = POC0911075532 · เอกสาร 2 = POC0911075532T
+    DATA(lv_reference)     = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
+    DATA(lv_reference_tax) = CONV ty_reference( |{ lv_reference }T| ).
 
     rt_entries = VALUE #(
+      " ================= เอกสาร 1: payment DZ (bank / WHT / customer) =================
+      " ไม่มี deferred tax code ในเอกสาร → กฎ "ทุก G/L line ต้องมี tax code" ไม่ทำงาน
       ( %cid   = |PAY{ lv_now }|
         %param = VALUE #(
           companycode             = '1000'
-          businesstransactiontype = 'RFPI'                             " ตามเอกสารตัวอย่าง · ทางเลือก 'RFBU'
+          businesstransactiontype = 'RFPI'                             " ตามเอกสารตัวอย่าง
           accountingdocumenttype  = 'DZ'
           documentdate            = lv_today
           postingdate             = lv_today
           documentreferenceid     = lv_reference
-          taxdeterminationdate    = lv_today                           " time-dependent tax เปิดอยู่ → ต้องส่ง
-          createdbyuser           = cl_abap_context_info=>get_user_technical_name( )
+          taxdeterminationdate    = lv_today
+          createdbyuser           = lv_user
 
           _glitems = VALUE #(
-            " [1] เงินเข้าธนาคาร — บัญชี tax category ว่าง ใส่ tax code ไม่ได้
+            " [1] เงินเข้าธนาคาร
             ( glaccountlineitem   = '1'
               glaccount           = '0011092001'
               documentitemtext    = 'รับผ่านช่องทาง mobile banking'
@@ -230,10 +236,9 @@ CLASS ycl_payment IMPLEMENTATION.
               _currencyamount     = VALUE #( ( currencyrole           = '00'   " transaction currency
                                                currency               = lv_currency
                                                journalentryitemamount = lv_bank_amount ) ) )
-            " [2] ภาษีหัก ณ ที่จ่ายที่ลูกค้าหักไว้ — บัญชี tax category * → ใส่ 0% (rev 6 ทดลอง ไม่ช่วย)
+            " [2] ภาษีหัก ณ ที่จ่ายที่ลูกค้าหักไว้ — ไม่ใส่ tax code (ตามตัวอย่าง)
             ( glaccountlineitem   = '2'
               glaccount           = '0011047003'
-              taxcode             = 'O0'
               assignmentreference = lv_assignment_date
               valuedate           = lv_today
               businessplace       = '0000'
@@ -241,11 +246,32 @@ CLASS ycl_payment IMPLEMENTATION.
                                                currency               = lv_currency
                                                journalentryitemamount = lv_wht_amount ) ) ) )
 
-          " tax line ส่งเป็น _GLItems + TaxCode ไม่ได้ (Tax statement item missing) → direct tax posting
+          _aritems = VALUE #(
+            " [3] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
+            ( glaccountlineitem = '3'
+              customer          = is_ar_item-customer                    " 0001000082
+              businessplace     = '0000'
+              _currencyamount   = VALUE #( ( currencyrole           = '00'
+                                             currency               = lv_currency
+                                             journalentryitemamount = lv_customer_amount ) ) ) ) ) )
+
+      " ================= เอกสาร 2: โอน deferred tax DM → O1 (tax item ล้วน) =================
+      " ไม่มี G/L line ธรรมดา → ไม่มีอะไรให้กฎ deferred tax จับ · รูปแบบเดียวกับ job Transfer Deferred Tax
+      ( %cid   = |TAX{ lv_now }|
+        %param = VALUE #(
+          companycode             = '1000'
+          businesstransactiontype = 'RFBU'                             " G/L posting ธรรมดา
+          accountingdocumenttype  = 'SA'
+          documentdate            = lv_today
+          postingdate             = lv_today
+          documentreferenceid     = lv_reference_tax
+          taxdeterminationdate    = lv_today
+          createdbyuser           = lv_user
+
           " G/L derive จาก TaxCode + TaxItemClassification (MWS) → DM = 0021082005 · O1 = 0021082003
           _taxitems = VALUE #(
-            " [3] โอนออกจาก deferred output tax (tax code DM จาก invoice)
-            ( glaccountlineitem     = '3'
+            " [1] โอนออกจาก deferred output tax (tax code DM จาก invoice)
+            ( glaccountlineitem     = '1'
               taxcode               = is_tax_item-taxcode                 " DM
               taxitemclassification = 'MWS'
               isdirecttaxposting    = abap_true
@@ -254,8 +280,8 @@ CLASS ycl_payment IMPLEMENTATION.
                                                  currency               = lv_currency
                                                  journalentryitemamount = lv_tax_amount
                                                  taxbaseamount          = lv_tax_base ) ) )
-            " [4] เข้า output tax
-            ( glaccountlineitem     = '4'
+            " [2] เข้า output tax
+            ( glaccountlineitem     = '2'
               taxcode               = 'O1'                               " target ของ DM
               taxitemclassification = 'MWS'
               isdirecttaxposting    = abap_true
@@ -263,16 +289,7 @@ CLASS ycl_payment IMPLEMENTATION.
               _currencyamount       = VALUE #( ( currencyrole           = '00'
                                                  currency               = lv_currency
                                                  journalentryitemamount = - lv_tax_amount
-                                                 taxbaseamount          = - lv_tax_base ) ) ) )
-
-          _aritems = VALUE #(
-            " [5] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
-            ( glaccountlineitem = '5'
-              customer          = is_ar_item-customer                    " 0001000082
-              businessplace     = '0000'
-              _currencyamount   = VALUE #( ( currencyrole           = '00'
-                                             currency               = lv_currency
-                                             journalentryitemamount = lv_customer_amount ) ) ) ) ) ) ).
+                                                 taxbaseamount          = - lv_tax_base ) ) ) ) ) ) ).
   ENDMETHOD.
 
 
@@ -318,7 +335,7 @@ CLASS ycl_payment IMPLEMENTATION.
 
 
   METHOD post_entry.
-    io_out->write( '--- Posting via I_JournalEntryTP~Post ---' ).
+    io_out->write( |--- Posting { lines( it_entries ) } document(s) via I_JournalEntryTP~Post ---| ).
 
     MODIFY ENTITIES OF i_journalentrytp
       ENTITY journalentry
@@ -328,10 +345,13 @@ CLASS ycl_payment IMPLEMENTATION.
       REPORTED DATA(ls_reported).
 
     LOOP AT ls_reported-journalentry INTO DATA(ls_reported_entry).
-      io_out->write( |  MSG: { ls_reported_entry-%msg->if_message~get_text( ) }| ).
+      io_out->write( |  MSG [{ ls_reported_entry-%cid }]: { ls_reported_entry-%msg->if_message~get_text( ) }| ).
     ENDLOOP.
 
     IF ls_failed-journalentry IS NOT INITIAL.
+      LOOP AT ls_failed-journalentry INTO DATA(ls_failed_entry).
+        io_out->write( |  FAILED: %cid { ls_failed_entry-%cid }| ).
+      ENDLOOP.
       io_out->write( 'FAILED in EXECUTE post — rolling back, nothing posted' ).
       ROLLBACK ENTITIES.
       RETURN.
@@ -344,7 +364,7 @@ CLASS ycl_payment IMPLEMENTATION.
     DATA(lv_commit_subrc) = sy-subrc.
 
     LOOP AT ls_commit_reported-journalentry INTO DATA(ls_commit_msg).
-      io_out->write( |  MSG (commit): { ls_commit_msg-%msg->if_message~get_text( ) }| ).
+      io_out->write( |  MSG (commit) [{ ls_commit_msg-%cid }]: { ls_commit_msg-%msg->if_message~get_text( ) }| ).
     ENDLOOP.
 
     IF lv_commit_subrc <> 0 OR ls_commit_failed-journalentry IS NOT INITIAL.
@@ -352,25 +372,25 @@ CLASS ycl_payment IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    " %pid จาก late numbering — แค่พิมพ์ไว้ดู
-    " ห้ามใช้ CONVERT KEY ตรงนี้ → BEHAVIOR_STATEMENT_ILLEGAL (ใช้ได้เฉพาะใน save phase ของ RAP)
+    " %pid จาก late numbering — แค่พิมพ์ไว้ดู (ห้าม CONVERT KEY ตรงนี้ → BEHAVIOR_STATEMENT_ILLEGAL)
     LOOP AT ls_mapped-journalentry INTO DATA(ls_mapped_entry).
       io_out->write( |COMMITTED: %cid { ls_mapped_entry-%cid } %pid { ls_mapped_entry-%pid }| ).
     ENDLOOP.
 
-    " เลขเอกสารจริง: query ด้วย reference ที่ generate ไว้
-    DATA(lv_reference) = it_entries[ 1 ]-%param-documentreferenceid.
-    SELECT companycode, accountingdocument, fiscalyear, accountingdocumenttype, postingdate
+    " เลขเอกสารจริง: query ด้วย reference ของทุกเอกสารในรอบนี้
+    DATA(lv_pattern) = |{ it_entries[ 1 ]-%param-documentreferenceid }%|.
+    SELECT companycode, accountingdocument, fiscalyear, accountingdocumenttype, postingdate, documentreferenceid
       FROM i_journalentry
       WHERE companycode         = '1000'
-        AND documentreferenceid = @lv_reference
+        AND documentreferenceid LIKE @lv_pattern
+      ORDER BY documentreferenceid
       INTO TABLE @DATA(lt_posted).
 
     IF lt_posted IS INITIAL.
-      io_out->write( |Reference { lv_reference } not found in I_JournalEntry yet — check Manage Journal Entries| ).
+      io_out->write( |Reference { lv_pattern } not found in I_JournalEntry yet — check Manage Journal Entries| ).
     ENDIF.
     LOOP AT lt_posted INTO DATA(ls_posted).
-      io_out->write( |POSTED: { ls_posted-accountingdocument } / { ls_posted-fiscalyear } type { ls_posted-accountingdocumenttype } posted { ls_posted-postingdate } ref { lv_reference }| ).
+      io_out->write( |POSTED: { ls_posted-accountingdocument } / { ls_posted-fiscalyear } type { ls_posted-accountingdocumenttype } posted { ls_posted-postingdate } ref { ls_posted-documentreferenceid }| ).
     ENDLOOP.
   ENDMETHOD.
 
