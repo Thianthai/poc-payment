@@ -38,6 +38,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | ยืนยัน field ของ `Post` parameter จาก ADT (4 abstract entity) · ส่ง code `YCL_PAYMENT` รอบแรก | ✅ docs/05 · `gc_simulate = abap_true` |
 | 2026-09-11 | activate `YCL_PAYMENT` | ✅ หลังแก้ 2 จุด: inline `DATA( )` ใน IMPORTING ของ functional call ใน `IF` ใช้ไม่ได้ · `acpi_zuonr` ไม่ released → ใช้ `TYPE c LENGTH 18` เอง |
 | 2026-09-11 | รัน F9 simulate (invoice `9400000005`) | ✅ payload 5 บรรทัดตรงกับ `3300000017` ทุก field · balance 0 · **ฝั่ง derive ปิดจ๊อบ** |
+| 2026-09-11 | reverse payment ตัวอย่าง `3300000017` ผ่าน Manage Journal Entries (reason 01) | ✅ reversal document **`3300000019`** · invoice `9400000005` ยัง open |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 

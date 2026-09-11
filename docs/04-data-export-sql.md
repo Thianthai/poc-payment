@@ -168,6 +168,9 @@ SELECT *
 เอกสารตัวอย่าง = **`3300000017` / 2026 / company code `1000`** — ตัวเดียวกับ payment
 ที่ใช้ใน POC clearing
 
+> `3300000017` ถูก **reverse แล้ว 2026-09-11** (reversal `3300000019`) ก่อน post จริงจาก
+> `YCL_PAYMENT` เพื่อไม่ให้ลูกหนี้มี open item ซ้ำ — ข้อมูลด้านล่างยังใช้เป็น reference ได้
+
 ### Q1 — header
 
 | Field | ค่า |
