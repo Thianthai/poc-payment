@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 5 · 2026-09-11 · `gc_simulate = abap_true` · post จริงสำเร็จแล้วด้วย rev 4 (`3300000024`)
+revision 6 · 2026-09-11 · `gc_simulate = abap_false` · ทดลองเอา DM/O1 กลับมา (O0 บน WHT line)
 
 ## แนวคิด
 
@@ -15,9 +15,10 @@ main           read → build → print → (gc_simulate = abap_false) post
 
 | จาก invoice | ไป payment |
 |---|---|
-| AR line: `Customer`, amount +6,418.93 | `_ARItems[3]` amount −6,418.93 · `BusinessPlace 0000` |
-| tax line (`ItemType T`): base −5,999 | ใช้แค่ base ไปคิด WHT · ~~`_TaxItems` DM/O1~~ comment ไว้ (rev 4) |
-| base 5,999 × `gc_wht_rate_percent` 3% | `_GLItems[2]` `0011047003` +179.97 |
+| AR line: `Customer`, amount +6,418.93 | `_ARItems[5]` amount −6,418.93 · `BusinessPlace 0000` |
+| tax line (`ItemType T`): `TaxCode DM`, amount −419.93, base −5,999 | `_TaxItems[3]` `DM` +419.93 base +5,999 · `MWS` · direct |
+| (ยอดเดียวกัน) | `_TaxItems[4]` `O1` −419.93 base −5,999 · `MWS` · direct |
+| base 5,999 × `gc_wht_rate_percent` 3% | `_GLItems[2]` `0011047003` +179.97 · `TaxCode O0` (rev 6) |
 | ลูกหนี้ − WHT | `_GLItems[1]` `0011092001` +6,238.96 · `BBL01`/`CA001` |
 
 ประวัติแก้:
@@ -29,6 +30,7 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 3 | tax line → `_TaxItems` (`MWS`, direct) · + `BusinessPlace 0000` ทุก G/L / AR line · assignment `94000000052026003` หายไป (`_TaxItems` ไม่มี field) | `Tax statement item missing for tax code DM` · `Enter a business place.` |
 | 4 | **Option A**: comment `_taxitems` ออก → 3 บรรทัด (bank / WHT / customer) · customer line = `'3'` | `G/L account item without tax code in document with deferred taxes` — บรรทัด DM/O1 ของตัวอย่างเป็นของที่ generate ตอน clear · **post ผ่าน → `3300000024`** |
 | 5 | ตัด `CONVERT KEY` ออกจาก `post_entry` (พิมพ์ `%pid` + `SELECT` ด้วย reference แทน) · `gc_simulate` กลับเป็น `abap_true` | dump `BEHAVIOR_STATEMENT_ILLEGAL` หลัง commit — `CONVERT KEY` ใช้ได้เฉพาะ save phase ของ RAP |
+| 6 | คืน `_TaxItems` DM/O1 · WHT line [2] ใส่ `TaxCode O0` · customer กลับเป็น `'5'` | ทดลองสมมติฐาน: check deferred tax ดูเฉพาะบัญชี tax-relevant (bank ใส่ tax code ไม่ได้อยู่แล้ว) |
 
 ## Source
 
@@ -48,7 +50,7 @@ CLASS ycl_payment DEFINITION
     CONSTANTS gc_fiscal_year  TYPE gjahr   VALUE '2026'.
 
     " ---------- guard: abap_true = พิมพ์ payload อย่างเดียว ไม่ post ----------
-    CONSTANTS gc_simulate TYPE abap_boolean VALUE abap_true.
+    CONSTANTS gc_simulate TYPE abap_boolean VALUE abap_false.
 
     " ---------- header ----------
     CONSTANTS gc_document_type        TYPE blart VALUE 'DZ'.
@@ -64,6 +66,7 @@ CLASS ycl_payment DEFINITION
     CONSTANTS gc_wht_rate_percent   TYPE p LENGTH 3 DECIMALS 2 VALUE '3.00'.
     CONSTANTS gc_tax_code_output    TYPE mwskz VALUE 'O1'.       " target tax code ของ DM (G/L derive จาก code + MWS)
     CONSTANTS gc_tax_classification TYPE c LENGTH 3 VALUE 'MWS'. " account key → derive G/L ของ tax item
+    CONSTANTS gc_tax_code_wht       TYPE mwskz VALUE 'O0'.       " 0% บน WHT line — กฎ deferred tax: G/L line ที่ tax-relevant ต้องมี tax code
     CONSTANTS gc_business_place     TYPE c LENGTH 4 VALUE '0000'. " Thai: head office (ตามตัวอย่างทุกบรรทัด)
 
     " ---------- ตัวแยกบรรทัด invoice ----------
@@ -216,7 +219,7 @@ CLASS ycl_payment IMPLEMENTATION.
 
     " ยอด: เดบิต = บวก · เครดิต = ลบ → กลับเครื่องหมายจาก invoice
     lv_customer_amount = - is_ar_item-amountintransactioncurrency.       " Cr ลูกหนี้      −6,418.93
-    lv_tax_amount      = - is_tax_item-amountintransactioncurrency.      " Dr deferred tax   +419.93 (ไม่ได้ใช้ใน option A)
+    lv_tax_amount      = - is_tax_item-amountintransactioncurrency.      " Dr deferred tax   +419.93
     lv_tax_base        = - is_tax_item-taxbaseamountintranscrcy.         " base            +5,999.00
     lv_wht_amount      = lv_tax_base * gc_wht_rate_percent / 100.        " Dr WHT            +179.97
     lv_bank_amount     = - lv_customer_amount - lv_wht_amount.           " Dr bank         +6,238.96
@@ -240,7 +243,7 @@ CLASS ycl_payment IMPLEMENTATION.
           createdbyuser           = cl_abap_context_info=>get_user_technical_name( )
 
           _glitems = VALUE #(
-            " [1] เงินเข้าธนาคาร
+            " [1] เงินเข้าธนาคาร — บัญชี tax category ว่าง ใส่ tax code ไม่ได้
             ( glaccountlineitem   = '1'
               glaccount           = gc_gl_bank
               documentitemtext    = gc_bank_text
@@ -252,9 +255,10 @@ CLASS ycl_payment IMPLEMENTATION.
               _currencyamount     = VALUE #( ( currencyrole           = gc_currency_role
                                                currency               = lv_currency
                                                journalentryitemamount = lv_bank_amount ) ) )
-            " [2] ภาษีหัก ณ ที่จ่ายที่ลูกค้าหักไว้
+            " [2] ภาษีหัก ณ ที่จ่ายที่ลูกค้าหักไว้ — บัญชี tax category * → ใส่ 0% กัน check deferred tax
             ( glaccountlineitem   = '2'
               glaccount           = gc_gl_wht
+              taxcode             = gc_tax_code_wht
               assignmentreference = lv_assignment_date
               valuedate           = lv_today
               businessplace       = gc_business_place
@@ -262,36 +266,33 @@ CLASS ycl_payment IMPLEMENTATION.
                                                currency               = lv_currency
                                                journalentryitemamount = lv_wht_amount ) ) ) )
 
-          " ---------- Option A (2026-09-11): ตัด tax line ออก ----------
-          " บรรทัดโอน DM→O1 ในเอกสารตัวอย่างเป็นของที่ Post Incoming Payments generate ตอน clear
-          " ถ้าใส่เองจะชน "G/L account item without tax code in document with deferred taxes"
-          " (ทุก G/L line ต้องมี tax code เมื่อเอกสารมี deferred tax code)
-          " → deferred tax transfer ให้เกิดตอน clear / job Transfer Deferred Tax แทน
-*          _taxitems = VALUE #(
-*            " [3] โอนออกจาก deferred output tax (tax code จาก invoice)
-*            ( glaccountlineitem     = '3'
-*              taxcode               = is_tax_item-taxcode
-*              taxitemclassification = gc_tax_classification
-*              isdirecttaxposting    = abap_true
-*              taxdeterminationdate  = lv_today
-*              _currencyamount       = VALUE #( ( currencyrole           = gc_currency_role
-*                                                 currency               = lv_currency
-*                                                 journalentryitemamount = lv_tax_amount
-*                                                 taxbaseamount          = lv_tax_base ) ) )
-*            " [4] เข้า output tax
-*            ( glaccountlineitem     = '4'
-*              taxcode               = gc_tax_code_output
-*              taxitemclassification = gc_tax_classification
-*              isdirecttaxposting    = abap_true
-*              taxdeterminationdate  = lv_today
-*              _currencyamount       = VALUE #( ( currencyrole           = gc_currency_role
-*                                                 currency               = lv_currency
-*                                                 journalentryitemamount = - lv_tax_amount
-*                                                 taxbaseamount          = - lv_tax_base ) ) ) )
+          " tax line ส่งเป็น _GLItems + TaxCode ไม่ได้ (Tax statement item missing) → direct tax posting
+          " G/L derive จาก TaxCode + TaxItemClassification (MWS) → DM = 0021082005 · O1 = 0021082003
+          _taxitems = VALUE #(
+            " [3] โอนออกจาก deferred output tax (tax code จาก invoice)
+            ( glaccountlineitem     = '3'
+              taxcode               = is_tax_item-taxcode
+              taxitemclassification = gc_tax_classification
+              isdirecttaxposting    = abap_true
+              taxdeterminationdate  = lv_today
+              _currencyamount       = VALUE #( ( currencyrole           = gc_currency_role
+                                                 currency               = lv_currency
+                                                 journalentryitemamount = lv_tax_amount
+                                                 taxbaseamount          = lv_tax_base ) ) )
+            " [4] เข้า output tax
+            ( glaccountlineitem     = '4'
+              taxcode               = gc_tax_code_output
+              taxitemclassification = gc_tax_classification
+              isdirecttaxposting    = abap_true
+              taxdeterminationdate  = lv_today
+              _currencyamount       = VALUE #( ( currencyrole           = gc_currency_role
+                                                 currency               = lv_currency
+                                                 journalentryitemamount = - lv_tax_amount
+                                                 taxbaseamount          = - lv_tax_base ) ) ) )
 
           _aritems = VALUE #(
-            " [3] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
-            ( glaccountlineitem = '3'
+            " [5] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
+            ( glaccountlineitem = '5'
               customer          = is_ar_item-customer
               businessplace     = gc_business_place
               _currencyamount   = VALUE #( ( currencyrole           = gc_currency_role
@@ -317,7 +318,7 @@ CLASS ycl_payment IMPLEMENTATION.
         lv_total += ls_gl_amount-journalentryitemamount.
         io_out->write( |  _GLItems[{ ls_gl-glaccountlineitem }] G/L { ls_gl-glaccount } | &&
                        |{ ls_gl_amount-journalentryitemamount } { ls_gl_amount-currency } | &&
-                       |assign { ls_gl-assignmentreference } value { ls_gl-valuedate } bplace { ls_gl-businessplace } | &&
+                       |tax { ls_gl-taxcode } assign { ls_gl-assignmentreference } value { ls_gl-valuedate } bplace { ls_gl-businessplace } | &&
                        |bank { ls_gl-housebank }/{ ls_gl-housebankaccount } text { ls_gl-documentitemtext }| ).
       ENDLOOP.
 

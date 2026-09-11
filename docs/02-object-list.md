@@ -51,6 +51,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | Q7/Q8: bank `0011092001` tax category ว่าง (ใส่ tax code ไม่ได้) · WHT `0011047003` = `*` · มี `O0` 0% | 🟡 แผน rev 6: `O0` บน WHT line + คืน `_TaxItems` |
 | 2026-09-11 | ผู้ใช้ระบุข้อกำหนดเต็ม: 5 บรรทัด **customer ต้องเป็น PK 15** | ❌ **PK 15 ทำไม่ได้ด้วย `I_JournalEntryTP`** — API สร้าง AR ได้แค่ 01/11 (SAP doc) · ไม่มี field posting key · พิสูจน์แล้ว `3300000024` = 11 → รอผู้ใช้/functional ตัดสิน: ยอมรับ 11 (ทำ rev 6 ต่อ) หรือเปลี่ยน API เป็น Bank Statement |
 | 2026-09-11 | สำรวจ API ทางเลือก (docs/01) — ไม่มี API post incoming payment บน Public Edition · ทางมาตรฐาน = Bank Statement (`SAP_COM_0316`) | 🟡 เสนอหยุดไล่ DM/O1 บน JE Post · รอผู้ใช้ตอบว่า payment จริงมาจากไหน |
+| 2026-09-11 | ผู้ใช้สั่งตัด PK 15 ออกก่อน ลองเอา DM/O1 ให้ได้ → ส่ง rev 6 (`O0` บน WHT line + คืน `_TaxItems`) | 🟡 รอผล post จริงครั้งที่ 7 |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
