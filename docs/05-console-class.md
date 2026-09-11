@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-ส่งให้ผู้ใช้รอบแรก 2026-09-11 · `gc_simulate = abap_true`
+revision 3 · 2026-09-11 · `gc_simulate = abap_false` (อยู่ระหว่างทดสอบ post จริง)
 
 ## แนวคิด
 
@@ -15,11 +15,19 @@ main           read → build → print → (gc_simulate = abap_false) post
 
 | จาก invoice | ไป payment |
 |---|---|
-| AR line: `Customer`, amount +6,418.93 | `_ARItems[5]` amount −6,418.93 |
-| tax line (`ItemType T`): `GLAccount 0021082005`, `TaxCode DM`, amount −419.93, base −5,999 | `_GLItems[3]` +419.93 base +5,999 |
-| (ยอดเดียวกัน) | `_GLItems[4]` `0021082003` `O1` −419.93 base −5,999 · assignment = invoice+FY+item ของ tax line |
+| AR line: `Customer`, amount +6,418.93 | `_ARItems[5]` amount −6,418.93 · `BusinessPlace 0000` |
+| tax line (`ItemType T`): `TaxCode DM`, amount −419.93, base −5,999 | `_TaxItems[3]` `DM` +419.93 base +5,999 · `MWS` · direct |
+| (ยอดเดียวกัน) | `_TaxItems[4]` `O1` −419.93 base −5,999 · `MWS` · direct (G/L derive จาก code + MWS) |
 | base 5,999 × `gc_wht_rate_percent` 3% | `_GLItems[2]` `0011047003` +179.97 |
 | ลูกหนี้ − WHT | `_GLItems[1]` `0011092001` +6,238.96 · `BBL01`/`CA001` |
+
+ประวัติแก้:
+
+| Rev | เปลี่ยน | เพราะ |
+|---|---|---|
+| 1 | ส่งครั้งแรก · tax line เป็น `_GLItems` + `TaxCode` | — |
+| 2 | + `TaxDeterminationDate` ใน header | `Time dependent taxes: tax date has to be filled from caller` |
+| 3 | tax line → `_TaxItems` (`MWS`, direct) · + `BusinessPlace 0000` ทุก G/L / AR line · assignment `94000000052026003` หายไป (`_TaxItems` ไม่มี field) | `Tax statement item missing for tax code DM` · `Enter a business place.` |
 
 ## Source
 
@@ -39,7 +47,7 @@ CLASS ycl_payment DEFINITION
     CONSTANTS gc_fiscal_year  TYPE gjahr   VALUE '2026'.
 
     " ---------- guard: abap_true = พิมพ์ payload อย่างเดียว ไม่ post ----------
-    CONSTANTS gc_simulate TYPE abap_boolean VALUE abap_true.
+    CONSTANTS gc_simulate TYPE abap_boolean VALUE abap_false.
 
     " ---------- header ----------
     CONSTANTS gc_document_type        TYPE blart VALUE 'DZ'.
@@ -53,8 +61,9 @@ CLASS ycl_payment DEFINITION
     CONSTANTS gc_bank_text          TYPE sgtxt VALUE 'รับผ่านช่องทาง mobile banking'.
     CONSTANTS gc_gl_wht             TYPE hkont VALUE '0011047003'.
     CONSTANTS gc_wht_rate_percent   TYPE p LENGTH 3 DECIMALS 2 VALUE '3.00'.
-    CONSTANTS gc_gl_output_tax      TYPE hkont VALUE '0021082003'.
-    CONSTANTS gc_tax_code_output    TYPE mwskz VALUE 'O1'.       " target tax code ของ DM
+    CONSTANTS gc_tax_code_output    TYPE mwskz VALUE 'O1'.       " target tax code ของ DM (G/L derive จาก code + MWS)
+    CONSTANTS gc_tax_classification TYPE c LENGTH 3 VALUE 'MWS'. " account key → derive G/L ของ tax item
+    CONSTANTS gc_business_place     TYPE c LENGTH 4 VALUE '0000'. " Thai: head office (ตามตัวอย่างทุกบรรทัด)
 
     " ---------- ตัวแยกบรรทัด invoice ----------
     CONSTANTS gc_account_type_customer TYPE i_operationalacctgdocitem-financialaccounttype       VALUE 'D'.
@@ -211,9 +220,8 @@ CLASS ycl_payment IMPLEMENTATION.
     lv_wht_amount      = lv_tax_base * gc_wht_rate_percent / 100.        " Dr WHT            +179.97
     lv_bank_amount     = - lv_customer_amount - lv_wht_amount.           " Dr bank         +6,238.96
 
-    " assignment ตามเอกสารตัวอย่าง: bank/WHT = posting date · output tax = key ของ tax line บน invoice
+    " assignment ตามเอกสารตัวอย่าง: bank/WHT = posting date
     DATA(lv_assignment_date) = CONV ty_assignment( lv_today ).
-    DATA(lv_tax_assignment)  = CONV ty_assignment( |{ gc_invoice }{ gc_fiscal_year }{ is_tax_item-accountingdocumentitem }| ).
 
     " reference ไม่ซ้ำต่อรอบ ไว้ query เอกสารกลับมา (16 chars)
     DATA(lv_reference) = CONV ty_reference( |POC{ lv_date_text+4(4) }{ lv_now }| ).
@@ -227,7 +235,7 @@ CLASS ycl_payment IMPLEMENTATION.
           documentdate            = lv_today
           postingdate             = lv_today
           documentreferenceid     = lv_reference
-          taxdeterminationdate    = lv_today                          " time-dependent tax เปิดอยู่ → ต้องส่ง ไม่งั้น "tax date has to be filled from caller"
+          taxdeterminationdate    = lv_today                          " time-dependent tax เปิดอยู่ → ต้องส่ง
           createdbyuser           = cl_abap_context_info=>get_user_technical_name( )
 
           _glitems = VALUE #(
@@ -239,6 +247,7 @@ CLASS ycl_payment IMPLEMENTATION.
               valuedate           = lv_today
               housebank           = gc_house_bank
               housebankaccount    = gc_house_bank_account
+              businessplace       = gc_business_place
               _currencyamount     = VALUE #( ( currencyrole           = gc_currency_role
                                                currency               = lv_currency
                                                journalentryitemamount = lv_bank_amount ) ) )
@@ -247,33 +256,40 @@ CLASS ycl_payment IMPLEMENTATION.
               glaccount           = gc_gl_wht
               assignmentreference = lv_assignment_date
               valuedate           = lv_today
+              businessplace       = gc_business_place
               _currencyamount     = VALUE #( ( currencyrole           = gc_currency_role
                                                currency               = lv_currency
-                                               journalentryitemamount = lv_wht_amount ) ) )
-            " [3] โอนออกจาก deferred output tax (G/L + tax code จาก invoice)
-            ( glaccountlineitem   = '3'
-              glaccount           = is_tax_item-glaccount
-              taxcode             = is_tax_item-taxcode
-              valuedate           = lv_today
-              _currencyamount     = VALUE #( ( currencyrole           = gc_currency_role
-                                               currency               = lv_currency
-                                               journalentryitemamount = lv_tax_amount
-                                               taxbaseamount          = lv_tax_base ) ) )
+                                               journalentryitemamount = lv_wht_amount ) ) ) )
+
+          " tax line ส่งเป็น _GLItems + TaxCode ไม่ได้ (Tax statement item missing) → direct tax posting
+          " G/L derive จาก TaxCode + TaxItemClassification (MWS) → DM = 0021082005 · O1 = 0021082003
+          _taxitems = VALUE #(
+            " [3] โอนออกจาก deferred output tax (tax code จาก invoice)
+            ( glaccountlineitem     = '3'
+              taxcode               = is_tax_item-taxcode
+              taxitemclassification = gc_tax_classification
+              isdirecttaxposting    = abap_true
+              taxdeterminationdate  = lv_today
+              _currencyamount       = VALUE #( ( currencyrole           = gc_currency_role
+                                                 currency               = lv_currency
+                                                 journalentryitemamount = lv_tax_amount
+                                                 taxbaseamount          = lv_tax_base ) ) )
             " [4] เข้า output tax
-            ( glaccountlineitem   = '4'
-              glaccount           = gc_gl_output_tax
-              taxcode             = gc_tax_code_output
-              assignmentreference = lv_tax_assignment
-              valuedate           = lv_today
-              _currencyamount     = VALUE #( ( currencyrole           = gc_currency_role
-                                               currency               = lv_currency
-                                               journalentryitemamount = - lv_tax_amount
-                                               taxbaseamount          = - lv_tax_base ) ) ) )
+            ( glaccountlineitem     = '4'
+              taxcode               = gc_tax_code_output
+              taxitemclassification = gc_tax_classification
+              isdirecttaxposting    = abap_true
+              taxdeterminationdate  = lv_today
+              _currencyamount       = VALUE #( ( currencyrole           = gc_currency_role
+                                                 currency               = lv_currency
+                                                 journalentryitemamount = - lv_tax_amount
+                                                 taxbaseamount          = - lv_tax_base ) ) ) )
 
           _aritems = VALUE #(
             " [5] ตัดลูกหนี้ — ไม่ใส่ GLAccount ให้ระบบ derive reconciliation account เอง
             ( glaccountlineitem = '5'
               customer          = is_ar_item-customer
+              businessplace     = gc_business_place
               _currencyamount   = VALUE #( ( currencyrole           = gc_currency_role
                                              currency               = lv_currency
                                              journalentryitemamount = lv_customer_amount ) ) ) ) ) ) ).
@@ -287,8 +303,8 @@ CLASS ycl_payment IMPLEMENTATION.
       io_out->write( |--- Payload (%cid { ls_entry-%cid }) ---| ).
       io_out->write( |Header: CoCd { ls_entry-%param-companycode } DocType { ls_entry-%param-accountingdocumenttype } | &&
                      |BTType { ls_entry-%param-businesstransactiontype } DocDate { ls_entry-%param-documentdate } | &&
-                     |PostDate { ls_entry-%param-postingdate } Ref { ls_entry-%param-documentreferenceid } | &&
-                     |CreatedBy { ls_entry-%param-createdbyuser }| ).
+                     |PostDate { ls_entry-%param-postingdate } TaxDate { ls_entry-%param-taxdeterminationdate } | &&
+                     |Ref { ls_entry-%param-documentreferenceid } CreatedBy { ls_entry-%param-createdbyuser }| ).
 
       CLEAR lv_total.
 
@@ -297,15 +313,22 @@ CLASS ycl_payment IMPLEMENTATION.
         lv_total += ls_gl_amount-journalentryitemamount.
         io_out->write( |  _GLItems[{ ls_gl-glaccountlineitem }] G/L { ls_gl-glaccount } | &&
                        |{ ls_gl_amount-journalentryitemamount } { ls_gl_amount-currency } | &&
-                       |tax { ls_gl-taxcode } base { ls_gl_amount-taxbaseamount } | &&
-                       |assign { ls_gl-assignmentreference } value { ls_gl-valuedate } | &&
+                       |assign { ls_gl-assignmentreference } value { ls_gl-valuedate } bplace { ls_gl-businessplace } | &&
                        |bank { ls_gl-housebank }/{ ls_gl-housebankaccount } text { ls_gl-documentitemtext }| ).
+      ENDLOOP.
+
+      LOOP AT ls_entry-%param-_taxitems INTO DATA(ls_tax).
+        READ TABLE ls_tax-_currencyamount INTO DATA(ls_tax_amount) INDEX 1.
+        lv_total += ls_tax_amount-journalentryitemamount.
+        io_out->write( |  _TaxItems[{ ls_tax-glaccountlineitem }] tax { ls_tax-taxcode } class { ls_tax-taxitemclassification } | &&
+                       |direct { ls_tax-isdirecttaxposting } { ls_tax_amount-journalentryitemamount } { ls_tax_amount-currency } | &&
+                       |base { ls_tax_amount-taxbaseamount } taxdate { ls_tax-taxdeterminationdate }| ).
       ENDLOOP.
 
       LOOP AT ls_entry-%param-_aritems INTO DATA(ls_ar).
         READ TABLE ls_ar-_currencyamount INTO DATA(ls_ar_amount) INDEX 1.
         lv_total += ls_ar_amount-journalentryitemamount.
-        io_out->write( |  _ARItems[{ ls_ar-glaccountlineitem }] customer { ls_ar-customer } | &&
+        io_out->write( |  _ARItems[{ ls_ar-glaccountlineitem }] customer { ls_ar-customer } bplace { ls_ar-businessplace } | &&
                        |{ ls_ar_amount-journalentryitemamount } { ls_ar_amount-currency }| ).
       ENDLOOP.
 
