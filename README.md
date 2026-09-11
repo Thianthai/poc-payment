@@ -1,2 +1,61 @@
-# poc-payment
-POC Journal Entry - Posting
+# YPOC_PAYMENT — POC: Post Incoming Payment ผ่าน BO Interface `I_JournalEntryTP`
+
+POC เรียก **released BO interface `I_JournalEntryTP`** (action `Post`) ด้วย EML
+จาก ABAP Cloud console class บน **SAP S/4HANA Cloud Public Edition**
+เพื่อ post เอกสาร incoming payment ให้ได้หน้าตาเดียวกับเอกสารตัวอย่างที่ post จาก Fiori
+
+- BO interface บน SAP Business Accelerator Hub:
+  <https://api.sap.com/bointerface/I_JOURNALENTRYTP>
+- ขอบเขต: console class ตัวเดียว รัน posting ครั้งละ 1 เอกสาร
+  ข้อมูลทดสอบ fix ไว้ใน code ทั้งหมด (ไม่มี UI / ไม่มี RAP ของตัวเอง)
+
+## ต่างจาก POC clearing ยังไง
+
+POC ก่อนหน้า ([`poc-clearing`](https://github.com/Thianthai/poc-clearing)) ต้องประกอบ SOAP
+แล้วยิง HTTP กลับเข้า tenant ตัวเอง เพราะ Clearing API มีแค่แบบ inbound SOAP
+
+รอบนี้ **ไม่ต้องยิง HTTP** — `I_JournalEntryTP` เป็น BO interface ที่ SAP release ให้
+ABAP Cloud เรียกตรง ๆ ด้วย `MODIFY ENTITIES … EXECUTE Post` + `COMMIT ENTITIES`
+จึงไม่มี communication scenario / arrangement / credential ให้ตั้งเลย
+
+```
+YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~Post ──▶ ACDOCA / BSEG
+ (console class)      EXECUTE post + COMMIT ENTITIES         (in-process)       เอกสาร DZ
+```
+
+## ขอบเขตที่ตกลงแล้ว (2026-09-11)
+
+| | |
+|---|---|
+| ทำ | post เอกสาร incoming payment (คาดว่า doc type `DZ`) — Dr bank / Cr customer |
+| **ไม่ทำ** | **clear open item ของ invoice** — `I_JournalEntryTP~Post` ไม่ clear ให้ (SAP ยืนยันเอง) ถ้าจะ clear ต้องต่อด้วย Clearing API จาก POC ก่อนหน้าเป็นอีกขั้น |
+| Simulate | `gc_simulate = abap_true` พิมพ์ payload ออก console ไม่ยิง `EXECUTE post` · เปลี่ยนเป็น `abap_false` เมื่อจะ post จริง (`Post` ไม่มี test-run flag ในตัว) |
+
+ผลที่ได้จาก POC นี้คือเอกสาร DZ ที่ **ค้างเป็น open item บน customer** ไม่ได้ผูกกับ invoice
+
+## Object บน repo
+
+| Object | Type | Status |
+|---|---|---|
+| `YPOC_PAYMENT` | Package | ⬜ |
+| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ⬜ |
+
+รายละเอียด + log อยู่ที่ [docs/02-object-list.md](docs/02-object-list.md)
+
+## เอกสาร
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| [docs/01-api-reference.md](docs/01-api-reference.md) | โครงสร้าง parameter ของ `Post`, ข้อจำกัด, จุดที่ต้องระวัง |
+| [docs/02-object-list.md](docs/02-object-list.md) | รายการ ABAP object + สถานะ + log การทดสอบ |
+| [docs/03-test-data.md](docs/03-test-data.md) | ช่องข้อมูลที่ต้อง export จากเอกสารตัวอย่างมาเติม |
+| [docs/04-data-export-sql.md](docs/04-data-export-sql.md) | ABAP SQL ดึงเอกสารตัวอย่างจาก released CDS view |
+| [docs/05-console-class.md](docs/05-console-class.md) | snapshot source code ของ console class |
+
+## การแบ่งงาน push
+
+- **ABAP object** (package, class) → ผู้ใช้สร้างใน ADT แล้ว push ผ่าน abapGit เอง
+- **เอกสารทั้งหมดใน repo นี้** → Claude เป็นคน push
+
+source of truth ของ ABAP object คือ tenant เสมอ
+`docs/05-console-class.md` เป็นแค่ snapshot ไว้อ่าน ไม่ใช่ตัวจริง
