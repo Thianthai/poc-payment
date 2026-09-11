@@ -42,27 +42,52 @@ COMMIT ENTITIES
   (`finalize` / determination on save / `adjust_numbers`) ไม่งั้น `BEHAVIOR_STATEMENT_ILLEGAL`
 - fail ตอน post = **short dump** → SAP แนะนำให้ `Validate` ก่อน
 
-## โครงสร้าง `%param` (จาก community — ยังไม่ยืนยันกับ tenant)
+## โครงสร้าง `%param` — ยืนยันจาก tenant แล้ว (2026-09-11)
 
-> ⚠️ ชื่อ field ด้านล่างประกอบจากตัวอย่างใน SAP Community + SOAP API ตัวพี่น้อง
-> ต้องเช็ค code completion ใน ADT ก่อนใช้จริง แล้วแก้ตารางนี้ให้ตรง
+จาก behavior definition `I_JournalEntryTP`:
 
-### Header
+```
+static factory save ( finalize, adjustnumbers ) action ( authorization : none ) Post
+  deep parameter D_JournalEntryPostParameter [1];
+```
 
-| Field | Necessity | หมายเหตุ |
+= **save action** (เรียกใน console class ด้วย `MODIFY ENTITIES` + `COMMIT ENTITIES` ได้ ·
+ใน RAP BO ของตัวเองเรียกได้เฉพาะ `finalize` / `adjust_numbers`)
+
+### Header — `D_JournalEntryPostParameter` (root abstract entity)
+
+| Field | DDIC | POC ใช้ |
 |---|---|---|
-| `CompanyCode` | mandatory | |
-| `BusinessTransactionType` | mandatory | `RFBU` = FI posting |
-| `AccountingDocumentType` | mandatory | incoming payment คาดว่า `DZ` |
-| `DocumentDate` | mandatory | |
-| `PostingDate` | mandatory | ต้องอยู่ใน period ที่เปิด |
-| `CreatedByUser` | mandatory | |
-| `DocumentReferenceID` | optional | reference (XBLNR) |
-| `AccountingDocumentHeaderText` | optional | header text (BKTXT) |
-| `AccountingDocument` | optional | external number — ไม่ใช้ |
-| `_GLItems` | 0..n | บรรทัด G/L (bank, fee ฯลฯ) |
-| `_APARItems` | 0..n | บรรทัด customer / supplier |
-| `_ProductTaxItems` | 0..n | บรรทัดภาษี (ถ้าเอกสารตัวอย่างมี) |
+| `CompanyCode` | `bukrs` | ✅ `1000` |
+| `BusinessTransactionType` | `glvor` | ✅ `RFPI` (fallback `RFBU`) |
+| `AccountingDocumentType` | `blart` | ✅ `DZ` |
+| `DocumentDate` / `PostingDate` | `bldat` / `budat` | ✅ วันนี้ |
+| `CreatedByUser` | `usnam` | ✅ `sy-uname` |
+| `DocumentReferenceID` | `xblnr` | ✅ generate ต่อรอบ |
+| `AccountingDocumentHeaderText` | `bktxt` | ว่าง (ตามตัวอย่าง) |
+| `AccountingDocument` | `belnr_d` | external number — ไม่ใช้ |
+| `LedgerGroup` | `fagl_ldgrp` | ไม่ใช้ |
+| `InvoiceReferenceDocument` | `awkey_reb` | ไม่ใช้ (ไม่ clear) |
+| `TaxReportingDate` / `TaxDeterminationDate` / `TaxFulfillmentDate` | | ไม่ใช้ |
+| `InvoiceReceiptDate` · `ExchangeRateDate` · `IsNegativePosting` · `PostingFiscalPeriod` | | ไม่ใช้ |
+| `Reference1InDocumentHeader` / `Reference2InDocumentHeader` | | ไม่ใช้ |
+| `JrnlEntryCntrySpecificRef1..5` / `Date1..5` / `BP1..2` | | ไม่ใช้ |
+| `ReversalReferenceDocumentKey` · `ReversalReason` · `PlannedReversalDate` | | ไม่ใช้ |
+| `EntryViewPostingControl` | `fins_entry_view_postng_control` | ไม่ใช้ |
+
+Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_ProductTaxItems` อย่างที่เดาไว้**):
+
+| Node | Abstract entity | POC ใช้ |
+|---|---|---|
+| `_GLItems` [0..*] | `D_JournalEntryPostGLItemP` | ✅ 4 บรรทัด (bank, WHT, deferred tax, output tax) |
+| `_ARItems` [0..*] | `D_JournalEntryPostARItemP` | ✅ 1 บรรทัด customer |
+| `_APItems` [0..*] | `D_JournalEntryPostAPItemP` | ไม่ใช้ |
+| `_TaxItems` [0..*] | `D_JournalEntryPostTaxItemP` | fallback ถ้า `_GLItems` + tax code ไม่ผ่าน |
+| `_WithHoldingTaxItems` [0..*] | `D_JournalEntryPostWhgdItemP` | ไม่ใช้ (WHT line ของตัวอย่างเป็น G/L ธรรมดา) |
+| `_OneTimeCustomerSupplier` [0..1] | `D_JournalEntryPostCPDP` | ไม่ใช้ |
+
+> field ของ item node ด้านล่างยังเป็นค่าที่เดาไว้ — รอ paste `D_JournalEntryPostGLItemP` /
+> `D_JournalEntryPostARItemP` จาก ADT
 
 ### `_GLItems`
 
@@ -78,12 +103,12 @@ COMMIT ENTITIES
 | `TaxCode` | ถ้า G/L เป็น tax-relevant ต้องใส่ ไม่งั้น error |
 | `_CurrencyAmount` | 1..n — ดูด้านล่าง |
 
-### `_APARItems`
+### `_ARItems`
 
 | Field | หมายเหตุ |
 |---|---|
 | `GLAccountLineItem` | ลำดับบรรทัด (นับต่อจาก `_GLItems`) |
-| `Customer` / `Supplier` | ใส่อย่างใดอย่างหนึ่ง |
+| `Customer` | เลข customer |
 | `SpecialGLCode` | special G/L indicator — เว้นว่างสำหรับ payment ปกติ |
 | `DocumentItemText` · `AssignmentReference` | |
 | `ProfitCenter` | ถ้า splitting ไม่ derive ให้ |
@@ -105,7 +130,7 @@ COMMIT ENTITIES
 ```
 Header  : DZ · RFBU · company code / dates / reference จากเอกสารตัวอย่าง
 _GLItems   [1]  Dr  bank clearing / cash G/L     +amount   (house bank, value date)
-_APARItems [2]  Cr  customer                     −amount
+_ARItems   [2]  Cr  customer                     −amount
 ```
 
 posting key ที่ระบบสร้างให้: G/L เดบิต `40` · customer เครดิต `15` (payment) —

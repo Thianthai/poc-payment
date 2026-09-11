@@ -28,7 +28,7 @@
 |---|---|---|
 | `AccountingDocumentItem` | ลำดับบรรทัด | `AccountingDocumentItem` |
 | `PostingKey` | บอกว่าเป็น bank (40) / customer (15) / อื่น ๆ | `PostingKey` |
-| `FinancialAccountType` | `S` = G/L → `_GLItems` · `D` = customer → `_APARItems` | `FinancialAccountType` |
+| `FinancialAccountType` | `S` = G/L → `_GLItems` · `D` = customer → `_ARItems` | `FinancialAccountType` |
 | `GLAccount` | บัญชี G/L ของบรรทัด | `GLAccount` |
 | `Customer` | เลข customer (บรรทัด D) | `Customer` |
 | `SpecialGLCode` | ต้องว่างสำหรับ payment ปกติ | `SpecialGLCode` |
@@ -62,7 +62,7 @@ _GLItems
   2  0011047003   +179.97  assignment 20260909  value date = posting date
   3  0021082005   +419.93  tax code DM
   4  0021082003   -419.93  tax code O1  assignment 94000000052026003
-_APARItems
+_ARItems
   5  customer 0001000082  -6418.93
 ```
 

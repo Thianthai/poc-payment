@@ -41,9 +41,11 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   เช่น `CHANGE_ME` แล้วบอกผู้ใช้ว่าต้องเติมอะไรบ้าง อย่าเดาค่าจริง
 - **simulate guard**: `gc_simulate = abap_true` เป็นค่าเริ่มต้นเสมอ
   พิมพ์ payload ออก console โดยไม่ยิง `EXECUTE post` · post จริงต่อเมื่อผู้ใช้สั่ง
-- ชื่อ field ใน `%param` / `_GLItems` / `_APARItems` ที่เขียนในเอกสารมาจาก community +
-  ความจำ **ยังไม่ได้ยืนยันกับ tenant** — ให้ผู้ใช้เช็ค code completion ใน ADT
-  (`TYPE TABLE FOR ACTION IMPORT i_journalentrytp~post`) แล้ว Claude แก้เอกสารตามของจริง
+- ชื่อ field ของ `Post` parameter ให้ยึด abstract entity จริงบน tenant
+  (`D_JournalEntryPostParameter` + `D_JournalEntryPost*ItemP`) ที่ผู้ใช้ paste จาก ADT
+  ตามที่บันทึกใน `docs/01` — ห้ามเดาชื่อ field / node เอง
+  (node จริงคือ `_GLItems` / `_ARItems` / `_APItems` / `_TaxItems` / `_WithHoldingTaxItems`
+  ไม่ใช่ `_APARItems` / `_ProductTaxItems` ที่ community เขียน)
 
 ## จุดที่พลาดง่าย (รวบรวมจาก community · ยังไม่ได้เจอเองบน tenant)
 

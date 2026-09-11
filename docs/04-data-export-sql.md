@@ -260,7 +260,7 @@ SELECT *
 | บรรทัด 002 (WHT) ถูกระบบสร้างเองจาก WHT code หรือ user ใส่ G/L ตรง ๆ | `IsAutomaticallyCreated` · `AccountingDocumentItemType` ของ item 002 · `WithholdingTaxCode` / `WithholdingTaxAmount` / `WithholdingTaxBaseAmount` ของ item 005 |
 | บรรทัด 003/004 (tax) เป็น tax item (`T`) หรือ G/L ธรรมดา | `AccountingDocumentItemType` · `TaxItemGroup` · `TransactionTypeDetermination` · `TaxBaseAmountInTransCrcy` ของ item 003/004 |
 
-คำตอบนี้ตัดสินว่า class ต้องส่งเป็น `_GLItems` ตรง ๆ หรือ `_ProductTaxItems` / WHT node
+คำตอบนี้ตัดสินว่า class ต้องส่งเป็น `_GLItems` ตรง ๆ หรือ `_TaxItems` / WHT node
 แล้วให้ระบบสร้างบรรทัดเอง
 
 ## Q6 — payment · entry view ทุก field
@@ -293,4 +293,4 @@ SELECT *
   ไม่ได้คำนวณ WHT → **class ไม่ต้องส่ง WHT node**
 - tax line 003/004 ไม่ใช่ `ItemType T` แต่มี `TaxType A` + `MWS` + base
   → เป็น G/L line ที่ใส่ tax code แล้วระบบ enrich ให้ = ทางที่จะลองก่อนคือ
-  `_GLItems` + `TaxCode` · ถ้า API สร้างบรรทัดภาษีงอกมาค่อยย้ายไป `_ProductTaxItems`
+  `_GLItems` + `TaxCode` · ถ้า API สร้างบรรทัดภาษีงอกมาค่อยย้ายไป `_TaxItems`

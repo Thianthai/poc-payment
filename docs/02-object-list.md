@@ -40,10 +40,10 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 
 | หัวข้อ | รอ |
 |---|---|
-| ชื่อ field จริงของ `%param` / `_GLItems` / `_APARItems` | เช็ค code completion ใน ADT |
+| ชื่อ field จริงของ `_GLItems` / `_ARItems` | ✅ header ยืนยันแล้ว · รอ item entity จาก ADT |
 | `Validate` มีบน tenant หรือไม่ | เช็คใน ADT |
 | BO รับ `BusinessTransactionType = RFPI` หรือไม่ | ลอง post จริง |
-| บรรทัดภาษี (003/004) ส่งเป็น `_GLItems` + `TaxCode` ได้ไหม หรือต้องใช้ `_ProductTaxItems` | ลอง post จริง |
+| บรรทัดภาษี (003/004) ส่งเป็น `_GLItems` + `TaxCode` ได้ไหม หรือต้องใช้ `_TaxItems` | ลอง post จริง |
 | post จริงได้เลขเอกสาร | รอขั้น 5 |
 
 ## งานที่ยังค้าง
