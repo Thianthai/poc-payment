@@ -100,11 +100,16 @@ ENDCLASS.
 CLASS ycl_payment IMPLEMENTATION.
 
   METHOD if_oo_adt_classrun~main.
+    DATA ls_ar_item  TYPE ty_invoice_item.
+    DATA ls_tax_item TYPE ty_invoice_item.
+
     out->write( |YCL_PAYMENT — post incoming payment from invoice { gc_company_code } / { gc_invoice } / { gc_fiscal_year }| ).
 
-    IF read_invoice( EXPORTING io_out      = out
-                     IMPORTING es_ar_item  = DATA(ls_ar_item)
-                               es_tax_item = DATA(ls_tax_item) ) = abap_false.
+    " inline DATA( ) ใน IMPORTING ของ functional call ที่อยู่ใน IF ใช้ไม่ได้ → แยกประกาศ
+    DATA(lv_ok) = read_invoice( EXPORTING io_out      = out
+                                IMPORTING es_ar_item  = ls_ar_item
+                                          es_tax_item = ls_tax_item ).
+    IF lv_ok = abap_false.
       RETURN.
     ENDIF.
 
