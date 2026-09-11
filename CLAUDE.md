@@ -76,6 +76,10 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   post เป็น G/L line เปล่า ๆ ได้ `G/L account 21082003 requires a valid tax code` (rev 10)
   · post เป็น G/L + tax code = base line → `Tax statement item missing` (rev 2)
   → บรรทัด DM→O1 ผ่าน API นี้ไม่ได้เลยบน TH ไม่ว่าทางไหน (สรุป 2026-09-11)
+- ทางที่ลองแล้วทั้งหมด (rev 2–15): G/L + tax code + tax item amount 0 → `Entry of tax for DM 003 … tax base 0`
+  (check อ่าน base ของ G/L line เอง · `TaxBaseAmount` ใน `_CurrencyAmount` ของ G/L item ไม่มีผล) ·
+  tax item เลข item ซ้ำกับ G/L → `Line item entered several times` (BO ไม่รวมบรรทัดแบบ BAPI) ·
+  `TaxItemAcctgDocItemRef` → FF 817 (TH ไม่ใช่ taxes-by-item) — **ห้ามเสียเวลาลองซ้ำ**
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 
