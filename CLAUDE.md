@@ -72,6 +72,10 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
 - **เอกสารที่มีแต่ `_TaxItems` post ไม่ได้บน TH** — `Enter a business place.` · tax item ไม่มี field
   BusinessPlace (derive จาก G/L/AR line ในเอกสารเดียวกันเท่านั้น) · `ConditionType = 'MWAS'` ต้องใส่
   ไม่งั้น `KSCHL is empty` · `TaxDeterminationDate` บน tax item ห้ามใส่ (doc) (rev 7–8, 2026-09-11)
+- **tax account (`0021082005` / `0021082003`, tax category `>`) บังคับ tax code** —
+  post เป็น G/L line เปล่า ๆ ได้ `G/L account 21082003 requires a valid tax code` (rev 10)
+  · post เป็น G/L + tax code = base line → `Tax statement item missing` (rev 2)
+  → บรรทัด DM→O1 ผ่าน API นี้ไม่ได้เลยบน TH ไม่ว่าทางไหน (สรุป 2026-09-11)
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 
