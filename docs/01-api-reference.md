@@ -80,10 +80,10 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 
 | Node | Abstract entity | POC ใช้ |
 |---|---|---|
-| `_GLItems` [0..*] | `D_JournalEntryPostGLItemP` | ✅ 4 บรรทัด (bank, WHT, deferred tax, output tax) |
+| `_GLItems` [0..*] | `D_JournalEntryPostGLItemP` | ✅ 2 บรรทัด (bank, WHT) |
 | `_ARItems` [0..*] | `D_JournalEntryPostARItemP` | ✅ 1 บรรทัด customer |
 | `_APItems` [0..*] | `D_JournalEntryPostAPItemP` | ไม่ใช้ |
-| `_TaxItems` [0..*] | `D_JournalEntryPostTaxItemP` | fallback ถ้า `_GLItems` + tax code ไม่ผ่าน |
+| `_TaxItems` [0..*] | `D_JournalEntryPostTaxItemP` | 🟡 deferred → output tax (DM/O1) — `_GLItems` + tax code ไม่ผ่าน (`Tax statement item missing`) · ยัง post ไม่สำเร็จ ดูหมายเหตุใน section |
 | `_WithHoldingTaxItems` [0..*] | `D_JournalEntryPostWhgdItemP` | ไม่ใช้ (WHT line ของตัวอย่างเป็น G/L ธรรมดา) |
 | `_OneTimeCustomerSupplier` [0..1] | `D_JournalEntryPostCPDP` | ไม่ใช้ |
 
@@ -101,11 +101,35 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `CompanyCode` | `bukrs` | ไม่ใส่ (ใช้ของ header) |
 | `ItemGroup` · `Reference1..3IDByBusinessPartner` · `OplAcctgDocItmCntrySpcfcRef1` | | ไม่ใช้ |
 | `FinancialTransactionType` · `TaxJurisdiction` · `TaxItemAcctgDocItemRef` · `TaxCountry` | | ไม่ใช้ |
-| `Plant` · `Material` · `BaseUnit` · `Quantity` · `IsNotCashDiscountLiable` · `PartnerCompany` · `BusinessPlace` | | ไม่ใช้ |
+| `BusinessPlace` | `acpi_branch` | ✅ `0000` — Thai localization บังคับ (`Enter a business place.`) |
+| `Plant` · `Material` · `BaseUnit` · `Quantity` · `IsNotCashDiscountLiable` · `PartnerCompany` | | ไม่ใช้ |
 | `ProfitCenter` · `PartnerProfitCenter` · `Segment` · `PartnerSegment` · `CostCenter` · `CostCtrActivityType` | | ไม่ใส่ — ตัวอย่างว่าง ระบบ derive `DUMMY` เอง |
 | `WBSElement` · `MasterFixedAsset` · `FixedAsset` · `SalesOrder(Item)` · `FunctionalArea` · `ServiceDocument*` · `PersonnelNumber` · `WorkItem` · `OrderID` · `JointVenture*` · `FinancialServices*` · `FinancialDataSource` | | ไม่ใช้ |
 | `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ |
 | `_ProfitabilitySupplement` | composition [0..1] → `D_JournalEntryPostCOPAP` | ไม่ใช้ |
+
+### `_TaxItems` — `D_JournalEntryPostTaxItemP` (ยืนยันจาก tenant)
+
+| Field | DDIC | POC ใช้ |
+|---|---|---|
+| `GLAccountLineItem` | `docln6` | ✅ |
+| `TaxCode` | `mwskz` | ✅ `DM` (จาก invoice) / `O1` (target ของ DM) |
+| `TaxItemClassification` | `ktosl` | ✅ `MWS` — account key → derive G/L (`DM` → `0021082005` · `O1` → `0021082003`) · doc: mandatory ถ้าไม่ให้ `ConditionType` |
+| `ConditionType` | `kschl` | **ต้องใส่** — ไม่ใส่ได้ `KSCHL is empty` (rev 7) · doc: required เมื่อ classification→condition เป็น 1:n · ลอง `MWAS` |
+| `IsDirectTaxPosting` | `bapi_flg_dir` | ✅ `X` — post ภาษีตรงโดยไม่มี base line |
+| `TaxDeterminationDate` | `acpi_txdat` | ❌ doc ProductTaxItem: **"Do not use"** — ใส่ที่ header พอ |
+| `TaxRate` | `msatz_f05l` | ไม่ใส่ (derive จาก tax code + date) |
+| `TaxItemAcctgDocItemRef` | `taxps` | ไม่ใส่ (ไม่มี base line ให้อ้าง) |
+| `TaxJurisdiction` · `TaxJurisdictionLevel` · `LowestLevelTaxJurisdiction` · `TaxCountry` | | ไม่ใช้ (US/CA/BR · RITA) |
+| `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ `JournalEntryItemAmount` + `TaxBaseAmount` (เครื่องหมายเดียวกัน) |
+
+> **ไม่มี `GLAccount` / `AssignmentReference` / `BusinessPlace`** — G/L มาจาก config ·
+> assignment `94000000052026003` ของตัวอย่างจึงใส่ไม่ได้ ·
+> business place ของ tax item **derive จากบรรทัด G/L/AR ในเอกสารเดียวกัน** → เอกสารที่มีแต่ tax item
+> ได้ `Enter a business place.` (rev 7) และไม่มีที่ให้ใส่
+>
+> ผลการลอง: ใส่ tax item ในเอกสาร payment → ชน `G/L account item without tax code in document
+> with deferred taxes` (bank line ใส่ tax code ไม่ได้) · แยกเป็นเอกสาร tax item ล้วน → ชน business place
 
 ### `_ARItems` — `D_JournalEntryPostARItemP` (ยืนยันจาก tenant)
 
@@ -120,7 +144,8 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `PaymentMethod` · `PaymentMethodSupplement` · `SEPAMandate` · `PaymentReference` · `PaymentBlockingReason` · `PaymentServiceProvider` · `PaymentRefByPaytSrvcProvider` | | ไม่ใช้ |
 | `HouseBank` / `HouseBankAccount` | | ไม่ใส่ (อยู่บรรทัด G/L bank แทน) |
 | `TaxCode` · `TaxJurisdiction` · `TaxCountry` · `VATRegistration` · `ReportingCountry` · `IsEUTriangularDeal` | | ไม่ใช้ |
-| `Reference1..3IDByBusinessPartner` · `OplAcctgDocItmCntrySpcfcRef1` · `BranchAccount` · `BusinessPlace` · `BusinessSectionCode` | | ไม่ใช้ |
+| `BusinessPlace` | `acpi_branch` | ✅ `0000` |
+| `Reference1..3IDByBusinessPartner` · `OplAcctgDocItmCntrySpcfcRef1` · `BranchAccount` · `BusinessSectionCode` | | ไม่ใช้ |
 | `SalesOrder(Item)` · `JointVenture*` · `CreditControlArea` · `PaymentReason` · `DigitalPaymentType` · `PaymentByDigitalPaymentService` · `DunningKey` · `DunningBlock` · `StateCentralBankPaymentReason` | | ไม่ใช้ |
 | `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ |
 
@@ -145,11 +170,14 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 
 ```
 Header  : DZ · RFPI · 1000 · dates = วันนี้ · DocumentReferenceID generate ต่อรอบ
-_GLItems [1]  0011092001  +6,238.96  bank    text + BBL01/CA001 + assignment/value date
-_GLItems [2]  0011047003    +179.97  WHT     assignment/value date
-_GLItems [3]  0021082005    +419.93  DM      TaxBaseAmount +5,999
-_GLItems [4]  0021082003    −419.93  O1      TaxBaseAmount −5,999 · assignment 94000000052026003
-_ARItems [5]  0001000082  −6,418.93  customer
+เอกสาร 1  DZ · RFPI  (post ผ่านแล้ว → 3300000024)
+_GLItems  [1]  0011092001  +6,238.96  bank    text/BBL01/CA001/assignment/value date/bplace 0000
+_GLItems  [2]  0011047003    +179.97  WHT     assignment/value date/bplace 0000
+_ARItems  [3]  0001000082  −6,418.93  customer · bplace 0000  (ได้ PK 11 ไม่ใช่ 15)
+
+เอกสาร 2  SA · RFBU  (ยัง post ไม่ผ่าน — business place)
+_TaxItems [1]  DM  +419.93  MWS direct · TaxBaseAmount +5,999  (G/L derive → 0021082005)
+_TaxItems [2]  O1  −419.93  MWS direct · TaxBaseAmount −5,999  (G/L derive → 0021082003)
 ```
 
 posting key ที่ระบบสร้างให้: G/L เดบิต `40` / เครดิต `50` · customer เครดิต `15` —
