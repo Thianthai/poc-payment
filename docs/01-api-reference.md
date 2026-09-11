@@ -86,54 +86,72 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `_WithHoldingTaxItems` [0..*] | `D_JournalEntryPostWhgdItemP` | ไม่ใช้ (WHT line ของตัวอย่างเป็น G/L ธรรมดา) |
 | `_OneTimeCustomerSupplier` [0..1] | `D_JournalEntryPostCPDP` | ไม่ใช้ |
 
-> field ของ item node ด้านล่างยังเป็นค่าที่เดาไว้ — รอ paste `D_JournalEntryPostGLItemP` /
-> `D_JournalEntryPostARItemP` จาก ADT
+### `_GLItems` — `D_JournalEntryPostGLItemP` (ยืนยันจาก tenant)
 
-### `_GLItems`
+| Field | DDIC | POC ใช้ |
+|---|---|---|
+| `GLAccountLineItem` | `docln6` | ✅ `1`–`4` |
+| `GLAccount` | `hkont` | ✅ |
+| `DocumentItemText` | `sgtxt` | ✅ บรรทัด bank |
+| `AssignmentReference` | `acpi_zuonr` | ✅ bank / WHT = posting date · output tax = key ของ tax line บน invoice |
+| `TaxCode` | `mwskz` | ✅ บรรทัด deferred / output tax |
+| `ValueDate` | `valut` | ✅ = posting date (ตามตัวอย่างทุกบรรทัด G/L) |
+| `HouseBank` / `HouseBankAccount` | `hbkid` / `hktid` | ✅ บรรทัด bank |
+| `CompanyCode` | `bukrs` | ไม่ใส่ (ใช้ของ header) |
+| `ItemGroup` · `Reference1..3IDByBusinessPartner` · `OplAcctgDocItmCntrySpcfcRef1` | | ไม่ใช้ |
+| `FinancialTransactionType` · `TaxJurisdiction` · `TaxItemAcctgDocItemRef` · `TaxCountry` | | ไม่ใช้ |
+| `Plant` · `Material` · `BaseUnit` · `Quantity` · `IsNotCashDiscountLiable` · `PartnerCompany` · `BusinessPlace` | | ไม่ใช้ |
+| `ProfitCenter` · `PartnerProfitCenter` · `Segment` · `PartnerSegment` · `CostCenter` · `CostCtrActivityType` | | ไม่ใส่ — ตัวอย่างว่าง ระบบ derive `DUMMY` เอง |
+| `WBSElement` · `MasterFixedAsset` · `FixedAsset` · `SalesOrder(Item)` · `FunctionalArea` · `ServiceDocument*` · `PersonnelNumber` · `WorkItem` · `OrderID` · `JointVenture*` · `FinancialServices*` · `FinancialDataSource` | | ไม่ใช้ |
+| `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ |
+| `_ProfitabilitySupplement` | composition [0..1] → `D_JournalEntryPostCOPAP` | ไม่ใช้ |
 
-| Field | หมายเหตุ |
-|---|---|
-| `GLAccountLineItem` | ลำดับบรรทัด `1`, `2`, … |
-| `GLAccount` | บัญชี G/L (10 หลัก มี leading zero) |
-| `DocumentItemText` | item text (SGTXT) |
-| `AssignmentReference` | assignment (ZUONR) |
-| `CostCenter` · `ProfitCenter` | ตามที่เอกสารตัวอย่างมี |
-| `HouseBank` · `HouseBankAccount` | บรรทัด bank |
-| `ValueDate` | value date ของบรรทัด bank |
-| `TaxCode` | ถ้า G/L เป็น tax-relevant ต้องใส่ ไม่งั้น error |
-| `_CurrencyAmount` | 1..n — ดูด้านล่าง |
+### `_ARItems` — `D_JournalEntryPostARItemP` (ยืนยันจาก tenant)
 
-### `_ARItems`
+| Field | DDIC | POC ใช้ |
+|---|---|---|
+| `GLAccountLineItem` | `docln6` | ✅ `5` |
+| `Customer` | `kunnr` | ✅ จาก AR line ของ invoice |
+| `GLAccount` | `hkont` | ไม่ใส่ — ระบบ derive reconciliation account เอง |
+| `DocumentItemText` · `AssignmentReference` | | ไม่ใส่ (ตัวอย่างว่าง) |
+| `SpecialGLCode` | `acpi_umskz` | ไม่ใส่ |
+| `PaymentTerms` · `DueCalculationBaseDate` · `CashDiscount*` · `NetPaymentDays` | | ไม่ใส่ |
+| `PaymentMethod` · `PaymentMethodSupplement` · `SEPAMandate` · `PaymentReference` · `PaymentBlockingReason` · `PaymentServiceProvider` · `PaymentRefByPaytSrvcProvider` | | ไม่ใช้ |
+| `HouseBank` / `HouseBankAccount` | | ไม่ใส่ (อยู่บรรทัด G/L bank แทน) |
+| `TaxCode` · `TaxJurisdiction` · `TaxCountry` · `VATRegistration` · `ReportingCountry` · `IsEUTriangularDeal` | | ไม่ใช้ |
+| `Reference1..3IDByBusinessPartner` · `OplAcctgDocItmCntrySpcfcRef1` · `BranchAccount` · `BusinessPlace` · `BusinessSectionCode` | | ไม่ใช้ |
+| `SalesOrder(Item)` · `JointVenture*` · `CreditControlArea` · `PaymentReason` · `DigitalPaymentType` · `PaymentByDigitalPaymentService` · `DunningKey` · `DunningBlock` · `StateCentralBankPaymentReason` | | ไม่ใช้ |
+| `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ |
 
-| Field | หมายเหตุ |
-|---|---|
-| `GLAccountLineItem` | ลำดับบรรทัด (นับต่อจาก `_GLItems`) |
-| `Customer` | เลข customer |
-| `SpecialGLCode` | special G/L indicator — เว้นว่างสำหรับ payment ปกติ |
-| `DocumentItemText` · `AssignmentReference` | |
-| `ProfitCenter` | ถ้า splitting ไม่ derive ให้ |
-| `PaymentTerms` · `DueCalculationBaseDate` | ไม่จำเป็นสำหรับ DZ |
-| `_CurrencyAmount` | 1..n |
+> **ไม่มี field WHT** ใน `_ARItems` — `WithholdingTaxCode XX` ที่เห็นบนตัวอย่างระบบ
+> derive จาก customer master เอง ตรงกับที่วิเคราะห์ไว้ใน docs/04
 
-### `_CurrencyAmount` (อยู่ใต้ทุก item)
+### `_CurrencyAmount` — `D_JournalEntryPostCurrencyAmtP` (ยืนยันจาก tenant)
 
-| Field | ค่า |
-|---|---|
-| `CurrencyRole` | `'00'` = transaction currency (ใส่แค่ตัวนี้พอ ระบบแปลงเอง) |
-| `Currency` | `THB` |
-| `JournalEntryItemAmount` | **เดบิต = บวก · เครดิต = ลบ** — ไม่มี DebitCreditCode แยก |
+| Field | DDIC | POC ใช้ |
+|---|---|---|
+| `CurrencyRole` | `curtp` | ✅ `'00'` = transaction currency |
+| `Currency` | `waers` | ✅ `THB` (จาก invoice) |
+| `JournalEntryItemAmount` | `wrbtr` | ✅ **เดบิต = บวก · เครดิต = ลบ** |
+| `TaxBaseAmount` | `fwbas` | ✅ บรรทัดภาษี: `+5,999` (deferred) / `−5,999` (output) ตามตัวอย่าง |
+| `TaxAmount` | `wmwst` | ไม่ใส่ |
+| `CashDiscountBaseAmount` | `wskto` | ไม่ใส่ |
+| `ExchangeRate` · `IndirectQuotedExchangeRate` | | ไม่ใส่ (THB → THB) |
 
-ผลรวมของทุกบรรทัดต้องเป็นศูนย์
+ผลรวม `JournalEntryItemAmount` ของทุกบรรทัดต้องเป็นศูนย์
 
-## Incoming payment หน้าตาที่คาด
+## Payload ที่ `YCL_PAYMENT` จะส่ง (derive จาก invoice `9400000005`)
 
 ```
-Header  : DZ · RFBU · company code / dates / reference จากเอกสารตัวอย่าง
-_GLItems   [1]  Dr  bank clearing / cash G/L     +amount   (house bank, value date)
-_ARItems   [2]  Cr  customer                     −amount
+Header  : DZ · RFPI · 1000 · dates = วันนี้ · DocumentReferenceID generate ต่อรอบ
+_GLItems [1]  0011092001  +6,238.96  bank    text + BBL01/CA001 + assignment/value date
+_GLItems [2]  0011047003    +179.97  WHT     assignment/value date
+_GLItems [3]  0021082005    +419.93  DM      TaxBaseAmount +5,999
+_GLItems [4]  0021082003    −419.93  O1      TaxBaseAmount −5,999 · assignment 94000000052026003
+_ARItems [5]  0001000082  −6,418.93  customer
 ```
 
-posting key ที่ระบบสร้างให้: G/L เดบิต `40` · customer เครดิต `15` (payment) —
+posting key ที่ระบบสร้างให้: G/L เดบิต `40` / เครดิต `50` · customer เครดิต `15` —
 ต้องเทียบกับเอกสารตัวอย่างว่าออกมาเหมือนกันไหม
 
 ## ผลลัพธ์ที่ได้กลับมา

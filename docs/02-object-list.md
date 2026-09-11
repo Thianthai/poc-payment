@@ -40,7 +40,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 
 | หัวข้อ | รอ |
 |---|---|
-| ชื่อ field จริงของ `_GLItems` / `_ARItems` | ✅ header ยืนยันแล้ว · รอ item entity จาก ADT |
+| ~~ชื่อ field จริงของ `_GLItems` / `_ARItems` / `_CurrencyAmount`~~ | ✅ paste จาก ADT ครบแล้ว 2026-09-11 |
 | `Validate` มีบน tenant หรือไม่ | เช็คใน ADT |
 | BO รับ `BusinessTransactionType = RFPI` หรือไม่ | ลอง post จริง |
 | บรรทัดภาษี (003/004) ส่งเป็น `_GLItems` + `TaxCode` ได้ไหม หรือต้องใช้ `_TaxItems` | ลอง post จริง |
@@ -53,5 +53,5 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 1 | ~~export payment ตัวอย่าง~~ | ✅ |
 | 2 | ~~export **invoice** `9400000005` (Q1–Q5)~~ | ✅ mapping อยู่ใน docs/04 |
 | 3 | ~~export payment `3300000017` แบบ `SELECT *` (Q6)~~ | ✅ ทุกบรรทัดใส่เอง ไม่มี auto line |
-| 4 | ยืนยันชื่อ field / node ของ `Post` parameter จาก ADT (abstract entity) | ⬜ |
-| 5 | เขียน `YCL_PAYMENT` | ⬜ รอข้อ 4 + คำตอบ requirement + confirm โครง class |
+| 4 | ~~ยืนยันชื่อ field / node ของ `Post` parameter จาก ADT~~ | ✅ |
+| 5 | เขียน `YCL_PAYMENT` | ⬜ โครง + default confirm แล้ว · รอผู้ใช้บอกว่าพร้อมรับ code |
