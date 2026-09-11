@@ -35,9 +35,11 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 
 ## Object บน repo
 
+abapGit serialize ด้วย `FOLDER_LOGIC = FULL` · `STARTING_FOLDER = /src/`
+
 | Object | Type | Status |
 |---|---|---|
-| `YPOC_PAYMENT` | Package | ⬜ |
+| `YPOC_PAYMENT` | Package | ✅ [`src/package.devc.xml`](src/package.devc.xml) |
 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ⬜ |
 
 รายละเอียด + log อยู่ที่ [docs/02-object-list.md](docs/02-object-list.md)

@@ -5,12 +5,12 @@
 
 | # | Object | Type | ใครสร้าง | Status |
 |---|---|---|---|---|
-| 1 | `YPOC_PAYMENT` | Package | ผู้ใช้ (ADT) | ⬜ |
+| 1 | `YPOC_PAYMENT` | Package | ผู้ใช้ (ADT) | ✅ [`src/package.devc.xml`](../src/package.devc.xml) |
 | 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | ⬜ |
 
 Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้วยังไม่ push · ✅ push ขึ้น repo แล้ว
 
-ชื่อ confirm แล้ว 2026-09-11
+ชื่อ confirm แล้ว 2026-09-11 · abapGit serialize ด้วย `FOLDER_LOGIC = FULL`, `STARTING_FOLDER = /src/`
 
 ## Config ที่ไม่ใช่ repository object
 
@@ -31,6 +31,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | วันที่ | ทำอะไร | ผล |
 |---|---|---|
 | 2026-09-11 | เปิด project · confirm scope (post only, no clearing) + ชื่อ object | ✅ |
+| 2026-09-11 | สร้าง `YPOC_PAYMENT` + link abapGit + push baseline | ✅ `.abapgit.xml` + `package.devc.xml` จาก SAP |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
