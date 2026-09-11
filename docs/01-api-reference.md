@@ -119,7 +119,7 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `IsDirectTaxPosting` | `bapi_flg_dir` | ✅ `X` — post ภาษีตรงโดยไม่มี base line |
 | `TaxDeterminationDate` | `acpi_txdat` | ❌ doc ProductTaxItem: **"Do not use"** — ใส่ที่ header พอ |
 | `TaxRate` | `msatz_f05l` | ไม่ใส่ (derive จาก tax code + date) |
-| `TaxItemAcctgDocItemRef` | `taxps` | ไม่ใส่ (ไม่มี base line ให้อ้าง) |
+| `TaxItemAcctgDocItemRef` | `taxps` | ❌ **ห้ามใส่บน TH** — FF 817 `Taxes by item is not activated` (line-by-line tax เฉพาะ US/CA/BR) (rev 12) |
 | `TaxJurisdiction` · `TaxJurisdictionLevel` · `LowestLevelTaxJurisdiction` · `TaxCountry` | | ไม่ใช้ (US/CA/BR · RITA) |
 | `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ `JournalEntryItemAmount` + `TaxBaseAmount` (เครื่องหมายเดียวกัน) |
 
