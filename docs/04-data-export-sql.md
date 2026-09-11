@@ -212,3 +212,85 @@ SELECT *
 
 **`BusinessTransactionType = RFPI`** ทุกบรรทัด — ไม่ใช่ `RFBU` ที่ SOAP doc บอกว่าเป็นค่าเดียวที่รับ
 → ต้องลองว่า BO interface รับ `RFPI` ไหม (ดู [03-test-data.md](03-test-data.md))
+
+---
+
+## ผลที่ได้ — invoice `9400000005` (export 2026-09-11 · Q1–Q5)
+
+### Q1 — header
+
+| Field | ค่า |
+|---|---|
+| `AccountingDocumentType` | `RV` (billing → FI) |
+| `DocumentDate` / `PostingDate` | `2026-09-03` |
+| `TransactionCurrency` | `THB` |
+| `DocumentReferenceID` | `JA70000046` (= billing document) |
+| `ReferenceDocumentType` / `OriginalReferenceDocument` | `VBRK` / `JA70000046` |
+
+### Q2 + Q4 — entry view · 3 บรรทัด
+
+| Item | PK | Type | Account | THB | Tax | field สำคัญจาก Q4 |
+|---|---|---|---|---:|---|---|
+| 001 | 01 | D | Customer `0001000082` (recon `0011030001`) | +6,418.93 | `DM` | **`WithholdingTaxCode = XX`** · WHT base/amount = 0 (ยังไม่คำนวณ ณ invoice) · payment terms `ZP00` · `NetDueDate 2026-09-03` |
+| 002 | 50 | S | G/L `0021060006` revenue | −5,999.00 | `DM` | `TaxItemGroup 001` |
+| 003 | 50 | S | G/L `0021082005` deferred output tax | −419.93 | `DM` | **`AccountingDocumentItemType = T`** · `TaxType A` · `TransactionTypeDetermination MWS` · `TaxBaseAmountInTransCrcy −5,999.00` · `TaxItemGroup 001` · open item managed |
+
+`ClearingAccountingDocument` ว่างทุกบรรทัด (item 001/003 ถูก reset clearing วันนี้ —
+`LastChangeDateTime 2026-09-11 03:39 UTC`) → invoice **open พร้อมใช้เป็น input**
+
+### Q3 / Q5 — G/L view
+
+3 บรรทัด ไม่มี splitting line · `ProfitCenter 0000010002` · `Segment JASGROUP` ·
+`BusinessTransactionType = SD00` (มาจาก SD ไม่เกี่ยวกับ payment)
+
+### mapping invoice → payment ที่อ่านได้
+
+| Payment `3300000017` | derive จาก invoice | ค่าที่ต้อง fix (ไม่มีบน invoice) |
+|---|---|---|
+| 005 customer −6,418.93 | item 001: `Customer` + `AmountInTransactionCurrency` กลับเครื่องหมาย | — |
+| 003 deferred tax `DM` +419.93 | item 003 (`ItemType = T`): `GLAccount` + `TaxCode` + amount กลับเครื่องหมาย | — |
+| 004 output tax `O1` −419.93 · assignment `94000000052026003` | amount = item 003 · assignment = `AccountingDocument + FiscalYear + AccountingDocumentItem` ของ item 003 | G/L `0021082003` + tax code `O1` (target ของ `DM` จาก deferred-tax config) |
+| 002 WHT +179.97 | base = `TaxBaseAmountInTransCrcy` ของ item 003 (5,999.00) · trigger = `WithholdingTaxCode XX` บน item 001 | อัตรา 3% + G/L `0011047003` (จาก WHT config ของ code `XX`) |
+| 001 bank +6,238.96 | = customer − WHT | house bank `BBL01` / `CA001` + G/L `0011092001` |
+
+### ยังไม่รู้ — ต้อง export payment `3300000017` แบบ Q4 (`SELECT *`)
+
+| คำถาม | ดูจาก field |
+|---|---|
+| บรรทัด 002 (WHT) ถูกระบบสร้างเองจาก WHT code หรือ user ใส่ G/L ตรง ๆ | `IsAutomaticallyCreated` · `AccountingDocumentItemType` ของ item 002 · `WithholdingTaxCode` / `WithholdingTaxAmount` / `WithholdingTaxBaseAmount` ของ item 005 |
+| บรรทัด 003/004 (tax) เป็น tax item (`T`) หรือ G/L ธรรมดา | `AccountingDocumentItemType` · `TaxItemGroup` · `TransactionTypeDetermination` · `TaxBaseAmountInTransCrcy` ของ item 003/004 |
+
+คำตอบนี้ตัดสินว่า class ต้องส่งเป็น `_GLItems` ตรง ๆ หรือ `_ProductTaxItems` / WHT node
+แล้วให้ระบบสร้างบรรทัดเอง
+
+## Q6 — payment · entry view ทุก field
+
+```abap
+SELECT *
+  FROM I_OperationalAcctgDocItem
+  WHERE CompanyCode        = '1000'
+    AND AccountingDocument = '3300000017'
+    AND FiscalYear         = '2026'
+  ORDER BY AccountingDocumentItem
+  INTO TABLE @DATA(lt_pay_items_all).
+```
+
+### ผล Q6 (2026-09-11) — **ทุกบรรทัดของ payment ถูกใส่เอง ไม่มีบรรทัดที่ระบบสร้าง**
+
+| Item | `ItemType` | `IsAutomaticallyCreated` | `TaxCode` | `TaxType` / `TTD` | `TaxItemGroup` | `TaxBase` | `WHT code` | อื่น ๆ |
+|---|---|---|---|---|---|---:|---|---|
+| 001 bank | (ว่าง) | (ว่าง) | | | 000 | 0 | | `PlanningLevel B0` · `HouseBank BBL01` · `HouseBankAccount CA001` |
+| 002 WHT | (ว่าง) | (ว่าง) | | | 000 | 0 | | G/L ธรรมดา — **ไม่ใช่ WHT item** |
+| 003 deferred | (ว่าง) | (ว่าง) | `DM` | `A` / `MWS` | 001 | +5,999.00 | | tax line แบบใส่ตรง (ต่างจาก invoice ที่เป็น `T`) |
+| 004 output | (ว่าง) | (ว่าง) | `O1` | `A` / `MWS` | 002 | −5,999.00 | | assignment `94000000052026003` |
+| 005 customer | (ว่าง) | (ว่าง) | | | 000 | 0 | `XX` | WHT base / amount = **0** · `IsUsedInPaymentTransaction X` · `NetPaymentAmount −6,418.93` |
+
+สรุป:
+
+- WHT line 002 เป็น **G/L ธรรมดา** ใส่เอง → class ส่งเป็น `_GLItems` ตรง ๆ ได้
+- `WithholdingTaxCode XX` บน customer line มีทั้งบน invoice (จาก SD) และ payment
+  โดย base/amount = 0 ทั้งคู่ → เป็นค่าที่ระบบ derive จาก customer master เอง
+  ไม่ได้คำนวณ WHT → **class ไม่ต้องส่ง WHT node**
+- tax line 003/004 ไม่ใช่ `ItemType T` แต่มี `TaxType A` + `MWS` + base
+  → เป็น G/L line ที่ใส่ tax code แล้วระบบ enrich ให้ = ทางที่จะลองก่อนคือ
+  `_GLItems` + `TaxCode` · ถ้า API สร้างบรรทัดภาษีงอกมาค่อยย้ายไป `_ProductTaxItems`

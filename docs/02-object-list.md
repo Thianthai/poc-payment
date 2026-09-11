@@ -33,6 +33,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | เปิด project · confirm scope (post only, no clearing) + ชื่อ object | ✅ |
 | 2026-09-11 | สร้าง `YPOC_PAYMENT` + link abapGit + push baseline | ✅ `.abapgit.xml` + `package.devc.xml` จาก SAP |
 | 2026-09-11 | export เอกสารตัวอย่าง `3300000017` ด้วย Q1–Q3 | ✅ ทุก field compile ผ่าน · 5 บรรทัด (4 G/L + 1 customer) · `BusinessTransactionType = RFPI` |
+| 2026-09-11 | requirement เพิ่ม: payment ต้อง derive จาก invoice · export invoice `9400000005` Q1–Q5 | ✅ invoice open · customer line มี `WithholdingTaxCode XX` · deferred tax line เป็น `ItemType T` base 5,999 |
+| 2026-09-11 | export payment `3300000017` แบบ `SELECT *` (Q6) | ✅ ทั้ง 5 บรรทัดใส่เอง (`IsAutomaticallyCreated` ว่าง) · WHT line เป็น G/L ธรรมดา · tax line เป็น G/L + tax code |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -49,5 +51,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | # | เรื่อง | สถานะ |
 |---|---|---|
 | 1 | ~~export payment ตัวอย่าง~~ | ✅ |
-| 2 | export **invoice** `9400000005` (Q1–Q5) — requirement ใหม่: payment derive จาก invoice | ⬜ |
-| 3 | เขียน `YCL_PAYMENT` | ⬜ รอข้อ 2 + confirm โครง class |
+| 2 | ~~export **invoice** `9400000005` (Q1–Q5)~~ | ✅ mapping อยู่ใน docs/04 |
+| 3 | ~~export payment `3300000017` แบบ `SELECT *` (Q6)~~ | ✅ ทุกบรรทัดใส่เอง ไม่มี auto line |
+| 4 | ยืนยันชื่อ field / node ของ `Post` parameter จาก ADT (abstract entity) | ⬜ |
+| 5 | เขียน `YCL_PAYMENT` | ⬜ รอข้อ 4 + คำตอบ requirement + confirm โครง class |
