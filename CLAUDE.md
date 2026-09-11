@@ -55,6 +55,10 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   `Time dependent taxes: tax date has to be filled from caller` +
   `For tax code DM, the key date 00/00/0000 does not fall in any validity period` (2026-09-11)
 - `EXECUTE post` ที่ fail ได้ `FAILED` + `REPORTED` ปกติ **ไม่ dump** (อย่างน้อยเคส validation)
+- **`CONVERT KEY OF i_journalentrytp FROM %pid` ใน console class = dump `BEHAVIOR_STATEMENT_ILLEGAL`**
+  (ใช้ได้เฉพาะ save phase ของ RAP BO) — และ dump เกิด**หลัง** `COMMIT ENTITIES` เอกสารจึง post ไปแล้ว
+  แต่ console ว่าง → หาเลขเอกสารด้วย `SELECT I_JournalEntry WHERE DocumentReferenceID` แทน (2026-09-11)
+- console ว่างเปล่าหลัง F9 = dump · ดูที่ ADT Feed Reader → Runtime Errors
 - **บรรทัดภาษีส่งเป็น `_GLItems` + `TaxCode` ไม่ได้** — ระบบมองเป็น base line แล้วฟ้อง
   `Tax statement item missing for tax code DM` → ต้องใช้ `_TaxItems` (2026-09-11)
 - **Thai localization ต้องส่ง `BusinessPlace`** (`0000` = head office ตามเอกสารตัวอย่าง)
@@ -76,7 +80,5 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
 - `Post` **ไม่ clear open item** — เอกสาร DZ ที่ได้จะค้างเป็น open item บน customer
 - `Post` **ไม่มี test-run flag** → ใช้ simulate guard ในโค้ดแทน
 - ต้อง `COMMIT ENTITIES` หลัง `MODIFY ENTITIES … EXECUTE post` ไม่งั้นไม่ได้เอกสาร
-- เลขเอกสารจริงได้จาก `MAPPED` → `%pid` + `CONVERT KEY OF i_journalentrytp`
-  หรือ `COMMIT ENTITIES RESPONSE OF i_journalentrytp`
 - `_CurrencyAmount` ต้องระบุ `CurrencyRole = '00'` (transaction currency)
   ยอด **เครดิตใส่ค่าติดลบ** ไม่มี field DebitCreditCode แยก

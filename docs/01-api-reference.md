@@ -157,10 +157,9 @@ posting key ที่ระบบสร้างให้: G/L เดบิต `
 
 ## ผลลัพธ์ที่ได้กลับมา
 
-- `ls_mapped-journalentry[ 1 ]-%pid` → `CONVERT KEY OF i_journalentrytp FROM … TO …`
-  ได้ `CompanyCode` + `AccountingDocument` + `FiscalYear`
-- หรืออ่านจาก `COMMIT ENTITIES RESPONSE OF` แล้ว query
-  `I_JournalEntry` / `I_OperationalAcctgDocItem` ด้วย `DocumentReferenceID` ที่ใส่ไปก็ได้
+- `MAPPED` ให้แค่ `%cid` + `%pid` (late numbering) — **`CONVERT KEY` ใช้ใน console ไม่ได้**
+  (`BEHAVIOR_STATEMENT_ILLEGAL` · เจอจริง 2026-09-11)
+- วิธีที่ใช้ได้: query `I_JournalEntry` ด้วย `DocumentReferenceID` ที่ generate ไว้หลัง `COMMIT ENTITIES`
 
 ## สิ่งที่ API นี้ทำไม่ได้ (ต้องรู้ก่อนเอาไปทำต่อ)
 

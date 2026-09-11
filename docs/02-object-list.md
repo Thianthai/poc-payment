@@ -45,6 +45,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | **post จริงครั้งที่ 3** (rev 3) | ❌ `FAILED` — `G/L account item without tax code in document $ 1 with deferred taxes` · tax statement / business place ผ่านแล้ว · = กฎ deferred tax: ทุก G/L line ต้องมี tax code → บรรทัด DM/O1 ของตัวอย่างเป็นของที่ Post Incoming Payments generate ตอน clear ไม่ใช่ post มือ · รอผู้ใช้เลือก A (ตัด tax line เหลือ 3 บรรทัด) / B (ใส่ tax code 0% บน bank/WHT) |
 | 2026-09-11 | เลือก **A** → ส่ง rev 4 (comment `_taxitems` ออก · 3 บรรทัด) | ✅ |
 | 2026-09-11 | **post จริงครั้งที่ 4–6** (rev 4) | ✅ **POST สำเร็จ** — ได้ `3300000020`, `3300000021` (กดซ้ำ · reverse ทิ้งแล้ว) และ **`3300000024`** · console ว่างเพราะ dump หลัง commit (คาดว่า `CONVERT KEY` ใช้นอก save sequence ไม่ได้) → รอ dump + export เอกสารเทียบ |
+| 2026-09-11 | Feed Reader: `BEHAVIOR_STATEMENT_ILLEGAL` — `Statement "CONVERT KEY" is not allowed with this status` ใน `post_entry` (เหมือนกันทั้ง 3 ครั้ง) → ส่ง rev 5 ตัด `CONVERT KEY` + `gc_simulate = abap_true` | ✅ |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -55,7 +56,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | ~~BO รับ `BusinessTransactionType = RFPI` หรือไม่~~ | ✅ รับ — post ผ่านด้วย `RFPI` |
 | ~~บรรทัดภาษี (003/004) ส่งเป็น `_GLItems` + `TaxCode` ได้ไหม~~ | ❌ ไม่ได้ (`Tax statement item missing`) → rev 3 ใช้ `_TaxItems` + `MWS` + direct · รอผล post |
 | ~~post จริงได้เลขเอกสาร~~ | ✅ `3300000024` (2026-09-11) |
-| console ว่างหลัง post — dump ตรงไหน | รอ Feed Reader |
+| ~~console ว่างหลัง post — dump ตรงไหน~~ | ✅ `BEHAVIOR_STATEMENT_ILLEGAL` ที่ `CONVERT KEY` (post_entry บรรทัด 39) → rev 5 ตัดออก |
 | เอกสารที่ได้เหมือน `3300000017` ไหม (PK / PC / WHT code / BTType) | รอ Q2+Q3+Q6 ของ `3300000024` |
 
 ## งานที่ยังค้าง

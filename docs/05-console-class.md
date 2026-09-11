@@ -1,7 +1,7 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-revision 4 · 2026-09-11 · `gc_simulate = abap_false` (อยู่ระหว่างทดสอบ post จริง)
+revision 5 · 2026-09-11 · `gc_simulate = abap_true` · post จริงสำเร็จแล้วด้วย rev 4 (`3300000024`)
 
 ## แนวคิด
 
@@ -27,7 +27,8 @@ main           read → build → print → (gc_simulate = abap_false) post
 | 1 | ส่งครั้งแรก · tax line เป็น `_GLItems` + `TaxCode` | — |
 | 2 | + `TaxDeterminationDate` ใน header | `Time dependent taxes: tax date has to be filled from caller` |
 | 3 | tax line → `_TaxItems` (`MWS`, direct) · + `BusinessPlace 0000` ทุก G/L / AR line · assignment `94000000052026003` หายไป (`_TaxItems` ไม่มี field) | `Tax statement item missing for tax code DM` · `Enter a business place.` |
-| 4 | **Option A**: comment `_taxitems` ออก → 3 บรรทัด (bank / WHT / customer) · customer line = `'3'` | `G/L account item without tax code in document with deferred taxes` — บรรทัด DM/O1 ของตัวอย่างเป็นของที่ generate ตอน clear |
+| 4 | **Option A**: comment `_taxitems` ออก → 3 บรรทัด (bank / WHT / customer) · customer line = `'3'` | `G/L account item without tax code in document with deferred taxes` — บรรทัด DM/O1 ของตัวอย่างเป็นของที่ generate ตอน clear · **post ผ่าน → `3300000024`** |
+| 5 | ตัด `CONVERT KEY` ออกจาก `post_entry` (พิมพ์ `%pid` + `SELECT` ด้วย reference แทน) · `gc_simulate` กลับเป็น `abap_true` | dump `BEHAVIOR_STATEMENT_ILLEGAL` หลัง commit — `CONVERT KEY` ใช้ได้เฉพาะ save phase ของ RAP |
 
 ## Source
 
@@ -47,7 +48,7 @@ CLASS ycl_payment DEFINITION
     CONSTANTS gc_fiscal_year  TYPE gjahr   VALUE '2026'.
 
     " ---------- guard: abap_true = พิมพ์ payload อย่างเดียว ไม่ post ----------
-    CONSTANTS gc_simulate TYPE abap_boolean VALUE abap_false.
+    CONSTANTS gc_simulate TYPE abap_boolean VALUE abap_true.
 
     " ---------- header ----------
     CONSTANTS gc_document_type        TYPE blart VALUE 'DZ'.
@@ -375,17 +376,13 @@ CLASS ycl_payment IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    " เลขเอกสารจาก late numbering
+    " %pid จาก late numbering — แค่พิมพ์ไว้ดู
+    " ห้ามใช้ CONVERT KEY ตรงนี้ → BEHAVIOR_STATEMENT_ILLEGAL (ใช้ได้เฉพาะใน save phase ของ RAP)
     LOOP AT ls_mapped-journalentry INTO DATA(ls_mapped_entry).
-      IF ls_mapped_entry-%pid IS NOT INITIAL.
-        CONVERT KEY OF i_journalentrytp FROM ls_mapped_entry-%pid TO DATA(ls_key).
-        io_out->write( |POSTED: { ls_key-companycode } { ls_key-accountingdocument } { ls_key-fiscalyear }| ).
-      ELSE.
-        io_out->write( |POSTED: { ls_mapped_entry-companycode } { ls_mapped_entry-accountingdocument } { ls_mapped_entry-fiscalyear }| ).
-      ENDIF.
+      io_out->write( |COMMITTED: %cid { ls_mapped_entry-%cid } %pid { ls_mapped_entry-%pid }| ).
     ENDLOOP.
 
-    " cross-check ด้วย reference ที่ generate ไว้
+    " เลขเอกสารจริง: query ด้วย reference ที่ generate ไว้
     DATA(lv_reference) = it_entries[ 1 ]-%param-documentreferenceid.
     SELECT companycode, accountingdocument, fiscalyear, accountingdocumenttype, postingdate
       FROM i_journalentry
@@ -397,7 +394,7 @@ CLASS ycl_payment IMPLEMENTATION.
       io_out->write( |Reference { lv_reference } not found in I_JournalEntry yet — check Manage Journal Entries| ).
     ENDIF.
     LOOP AT lt_posted INTO DATA(ls_posted).
-      io_out->write( |Verified: { ls_posted-accountingdocument } / { ls_posted-fiscalyear } type { ls_posted-accountingdocumenttype } posted { ls_posted-postingdate } ref { lv_reference }| ).
+      io_out->write( |POSTED: { ls_posted-accountingdocument } / { ls_posted-fiscalyear } type { ls_posted-accountingdocumenttype } posted { ls_posted-postingdate } ref { lv_reference }| ).
     ENDLOOP.
   ENDMETHOD.
 
