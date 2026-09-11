@@ -69,6 +69,9 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   generate ตอน **clear** invoice ไม่ใช่บรรทัดที่ post มือ · API post ไม่ clear จึงทำซ้ำไม่ได้
   · check นี้ดู **ทุก** G/L line รวมบัญชี bank ที่ tax category ว่าง (ใส่ tax code ไม่ได้) —
   พิสูจน์ rev 6 (`O0` บน WHT line ก็ยัง fail) → payment + deferred tax transfer ต้องเป็น**คนละเอกสาร**
+- **เอกสารที่มีแต่ `_TaxItems` post ไม่ได้บน TH** — `Enter a business place.` · tax item ไม่มี field
+  BusinessPlace (derive จาก G/L/AR line ในเอกสารเดียวกันเท่านั้น) · `ConditionType = 'MWAS'` ต้องใส่
+  ไม่งั้น `KSCHL is empty` · `TaxDeterminationDate` บน tax item ห้ามใส่ (doc) (rev 7–8, 2026-09-11)
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 

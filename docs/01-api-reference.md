@@ -115,7 +115,7 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `GLAccountLineItem` | `docln6` | ✅ |
 | `TaxCode` | `mwskz` | ✅ `DM` (จาก invoice) / `O1` (target ของ DM) |
 | `TaxItemClassification` | `ktosl` | ✅ `MWS` — account key → derive G/L (`DM` → `0021082005` · `O1` → `0021082003`) · doc: mandatory ถ้าไม่ให้ `ConditionType` |
-| `ConditionType` | `kschl` | **ต้องใส่** — ไม่ใส่ได้ `KSCHL is empty` (rev 7) · doc: required เมื่อ classification→condition เป็น 1:n · ลอง `MWAS` |
+| `ConditionType` | `kschl` | **ต้องใส่ `MWAS`** (output tax) — ไม่ใส่ได้ `KSCHL is empty` (rev 7) · `MWAS` ผ่านแล้ว (rev 8) |
 | `IsDirectTaxPosting` | `bapi_flg_dir` | ✅ `X` — post ภาษีตรงโดยไม่มี base line |
 | `TaxDeterminationDate` | `acpi_txdat` | ❌ doc ProductTaxItem: **"Do not use"** — ใส่ที่ header พอ |
 | `TaxRate` | `msatz_f05l` | ไม่ใส่ (derive จาก tax code + date) |
@@ -126,7 +126,7 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 > **ไม่มี `GLAccount` / `AssignmentReference` / `BusinessPlace`** — G/L มาจาก config ·
 > assignment `94000000052026003` ของตัวอย่างจึงใส่ไม่ได้ ·
 > business place ของ tax item **derive จากบรรทัด G/L/AR ในเอกสารเดียวกัน** → เอกสารที่มีแต่ tax item
-> ได้ `Enter a business place.` (rev 7) และไม่มีที่ให้ใส่
+> ได้ `Enter a business place.` (rev 7, rev 8) และไม่มีที่ให้ใส่ — **blocker สุดท้ายที่ยืนยันแล้ว**
 >
 > ผลการลอง: ใส่ tax item ในเอกสาร payment → ชน `G/L account item without tax code in document
 > with deferred taxes` (bank line ใส่ tax code ไม่ได้) · แยกเป็นเอกสาร tax item ล้วน → ชน business place
