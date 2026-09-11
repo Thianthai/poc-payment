@@ -53,7 +53,9 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | สำรวจ API ทางเลือก (docs/01) — ไม่มี API post incoming payment บน Public Edition · ทางมาตรฐาน = Bank Statement (`SAP_COM_0316`) | 🟡 เสนอหยุดไล่ DM/O1 บน JE Post · รอผู้ใช้ตอบว่า payment จริงมาจากไหน |
 | 2026-09-11 | ผู้ใช้สั่งตัด PK 15 ออกก่อน ลองเอา DM/O1 ให้ได้ → ส่ง rev 6 (`O0` บน WHT line + คืน `_TaxItems`) | ✅ ส่งแล้ว |
 | 2026-09-11 | **post จริงครั้งที่ 7** (rev 6) | ❌ `G/L account item without tax code in document with deferred taxes` **เหมือนเดิม** → check ดูทุก G/L line รวม bank ที่ใส่ tax code ไม่ได้ → **เอกสารเดียว 5 บรรทัดปิดสนิท** · เหลือทาง 2 เอกสาร (DZ 3 บรรทัด + SA `_TaxItems` ล้วน) |
-| 2026-09-11 | rev 6b: ถอด constants ให้อ่านง่าย (ผู้ใช้ขอ) · ส่ง **rev 7**: 2 เอกสารใน commit เดียว (DZ + SA `_TaxItems` ล้วน) | 🟡 รอผล post จริงครั้งที่ 8 |
+| 2026-09-11 | rev 6b: ถอด constants ให้อ่านง่าย (ผู้ใช้ขอ) · ส่ง **rev 7**: 2 เอกสารใน commit เดียว (DZ + SA `_TaxItems` ล้วน) | ✅ ส่งแล้ว (แก้ `%cid` → `%pid` ใน late REPORTED) |
+| 2026-09-11 | **post จริงครั้งที่ 8** (rev 7) | ⚠️ เอกสาร 1 DZ: **`Document check - no errors`** · เอกสาร 2 SA: `Enter a business place.` + `KSCHL is empty` → rollback ทั้งคู่ |
+| 2026-09-11 | อ่าน doc ProductTaxItem | `ConditionType` required เมื่อ classification→condition เป็น 1:n · `TaxDeterminationDate` บน tax item = "Do not use" · **ไม่มี field BusinessPlace** ใน tax item / header → เอกสาร tax item ล้วนน่าจะ post ไม่ได้บน TH · เสนอ rev 8 (`MWAS`, ลบ tax date) เพื่อ isolate blocker |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
