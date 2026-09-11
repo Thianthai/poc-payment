@@ -297,3 +297,30 @@ SELECT *
 - tax line 003/004 ไม่ใช่ `ItemType T` แต่มี `TaxType A` + `MWS` + base
   → เป็น G/L line ที่ใส่ tax code แล้วระบบ enrich ให้ = ทางที่จะลองก่อนคือ
   `_GLItems` + `TaxCode` · ถ้า API สร้างบรรทัดภาษีงอกมาค่อยย้ายไป `_TaxItems`
+
+---
+
+## ผลที่ได้ — เอกสารที่ POC post: `3300000024` (Q2 + Q3 + Q6 · 2026-09-11)
+
+post จาก `YCL_PAYMENT` rev 4 (option A · 3 บรรทัด) · reference `POC0911…`
+
+| Item | PK | Type | Account | THB | Assignment | Text | House bank | Value date | bplace | อื่น ๆ |
+|---|---|---|---|---:|---|---|---|---|---|---|
+| 001 | 40 | S | G/L `0011092001` | +6,238.96 | `20260911` | รับผ่านช่องทาง mobile banking | `BBL01` / `CA001` | 2026-09-11 | `0000` | `PlanningLevel B0` |
+| 002 | 40 | S | G/L `0011047003` | +179.97 | `20260911` | | | 2026-09-11 | `0000` | |
+| 003 | **11** | D | Customer `0001000082` (recon `0011030001`) | −6,418.93 | | | | | `0000` | `InvoiceReference V` · `IsSalesRelated X` · `WithholdingTaxCode` ว่าง · `IsUsedInPaymentTransaction` ว่าง |
+
+ACDOCA: 3 บรรทัด · `ProfitCenter DUMMY` · `Segment JASGROUP` · `BusinessTransactionType RFPI` · ไม่มี splitting line
+
+### เทียบกับ `3300000017`
+
+| หัวข้อ | `3300000017` (F-28) | `3300000024` (API) | สถานะ |
+|---|---|---|---|
+| bank line 001 | | เหมือนทุก field | ✅ |
+| WHT line 002 | | เหมือนทุก field | ✅ |
+| deferred/output tax 003/004 | มี (generate ตอน clear) | ไม่มี | ⚠️ ตัดออกตาม option A — ต้องเกิดจาก clearing / Transfer Deferred Tax |
+| customer posting key | `15` incoming payment | `11` credit memo (+ `InvoiceReference V`) | ❌ ข้อจำกัด API: AR credit = 11 เท่านั้น |
+| `IsUsedInPaymentTransaction` | `X` | ว่าง | ❌ ตามมากับ PK 11 |
+| `WithholdingTaxCode` | `XX` (base/amount 0) | ว่าง | ❌ API ไม่ derive จาก customer master — อาจลอง `_WithHoldingTaxItems` |
+| header: DZ / RFPI / BKPFF / business place / PC / segment | | เหมือน | ✅ |
+
