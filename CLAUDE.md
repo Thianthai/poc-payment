@@ -67,6 +67,8 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   `G/L account item without tax code in document with deferred taxes` (2026-09-11)
   → บรรทัดโอน DM→O1 ในเอกสารตัวอย่าง `3300000017` เป็นของที่ app Post Incoming Payments
   generate ตอน **clear** invoice ไม่ใช่บรรทัดที่ post มือ · API post ไม่ clear จึงทำซ้ำไม่ได้
+  · check นี้ดู **ทุก** G/L line รวมบัญชี bank ที่ tax category ว่าง (ใส่ tax code ไม่ได้) —
+  พิสูจน์ rev 6 (`O0` บน WHT line ก็ยัง fail) → payment + deferred tax transfer ต้องเป็น**คนละเอกสาร**
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 
