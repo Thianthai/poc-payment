@@ -80,7 +80,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-14 | Q7 `0011054001`: tax category ว่าง (เหมือน bank) · ไม่ใช่ OIM | → check deferred tax ไม่ได้ขึ้นกับบัญชี แต่ขึ้นกับโครงเอกสาร (ใบไม่มี AR line / RFBU) · assignment O1 มาจาก BAdI C1 |
 | 2026-09-14 | ส่ง **rev 17 final** (2 ใบ · `lv_simulate = abap_true`) · sync snapshot / README / docs/01 | ✅ รอผู้ใช้ activate + push abapGit (ยังไม่ push repo ตามที่สั่ง) |
 | 2026-09-14 | **feedback จาก POC clearing**: clear `3300000026` ไม่ได้ — AIF `/FINAC`: "The open items display different withholding tax information from the relevant business partner master record" · customer `0001000082` มี WHT type ใน master แต่บรรทัดลูกหนี้ที่ API สร้างไม่มี WHT info (`WithholdingTaxCode` ว่าง) · Fiori เติมจาก master ให้เอง API ไม่เติม | 🟡 rev 18: เพิ่ม `_WithHoldingTaxItems` (amount 0 · ทุก type ที่ master มี) · ได้ field list + master (1 type: `MA`/`09`, WHT agent Yes) → ส่ง rev 18 |
-| 2026-09-14 | ส่ง **rev 18**: ใบ 1 + `_WithHoldingTaxItems` MA/09 amount 0 manual · `lv_simulate = abap_false` | 🟡 รอ post + ส่งเลขให้ clearing ทดสอบ |
+| 2026-09-14 | ส่ง **rev 18**: ใบ 1 + `_WithHoldingTaxItems` MA/09 amount 0 manual · `lv_simulate = abap_false` | ✅ **post ผ่านทั้ง 2 ใบ** — DZ **`3300000031`** (ref `POC0914055500`) + SA **`7200000002`** · commit MSG: `Document posted successfully: BKPFF 330000003110002026` / `720000000210002026` · ส่งให้ POC clearing ทดสอบ · ⚠️ `POSTED:` query เจอแค่ใบ DZ → เช็ค ref ของใบ SA |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
