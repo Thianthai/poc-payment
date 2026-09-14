@@ -6,7 +6,7 @@
 | # | Object | Type | ใครสร้าง | Status |
 |---|---|---|---|---|
 | 1 | `YPOC_PAYMENT` | Package | ผู้ใช้ (ADT) | ✅ [`src/package.devc.xml`](../src/package.devc.xml) |
-| 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | 🟡 **rev 18 final** (2026-09-14 · clear ผ่านแล้ว) · รอ push abapGit |
+| 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | ✅ [`src/ycl_payment.clas.abap`](../src/ycl_payment.clas.abap) — rev 18 final · push 2026-09-14 · ตรงกับ docs/05 ทุกบรรทัด |
 
 Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้วยังไม่ push · ✅ push ขึ้น repo แล้ว
 
@@ -84,6 +84,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-14 | Q6 `3300000031` + header 3 ใบ | ✅ บรรทัดลูกหนี้ `WithholdingTaxCode = XX` แล้ว (เหมือน `3300000017/005`) · ⚠️ ref ใบ SA ถูกทับเป็น `09060003` (ใบก่อน `09060002`) — น่าจะมี header substitution generate ref แบบ `MMDD+running` ให้ SA · ใบ DZ คง `POC…` · `POSTED:` query จึงเจอแค่ DZ → rev 19 จะ parse เลขจาก MSG commit แทน |
 | 2026-09-14 | **POC clearing clear ผ่าน** — clearing document **`3000000005`** (06:14 UTC) คลุม invoice `9400000005` 001/003 + payment `3300000031`/003 + deferred tax `7200000002`/003 | ✅ **POC ทั้งสองฝั่งปิด** · ยืนยัน: `_WithHoldingTaxItems` คือตัวทำให้ clear ได้ (`3300000026` ไม่มี → F5 787 ทุกครั้ง) · PK 11 + `InvoiceReference V` ไม่เป็นปัญหา · ใบ SA แยกใช้ได้ |
 | 2026-09-14 | assignment บน O1 = `…001` (BAdI fix ค่า) — ผู้ใช้ยืนยันใช้ได้สำหรับ POC เพราะ invoice เดิมทุกรอบ · 3 หลักท้าย (`001` vs ตัวอย่าง `003`) ให้ functional ยืนยัน | ✅ |
+| 2026-09-14 | push `YCL_PAYMENT` rev 18 ขึ้น abapGit (`29c4a47`) | ✅ `src/ycl_payment.clas.abap` ตรงกับ docs/05 ทุกบรรทัด · `lv_simulate = abap_true` · **POC ปิด** |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -101,8 +102,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 
 | # | เรื่อง | สถานะ |
 |---|---|---|
-| 1 | activate rev 18 (final · `lv_simulate = abap_true`) · push `YCL_PAYMENT` ขึ้น abapGit → Claude อัปเดต status ✅ | ⬜ |
-| 2 | push เอกสาร repo (commit local ค้างอยู่หลาย commit) | ⬜ รอผู้ใช้สั่ง |
+| 1 | ~~activate rev 18 (final) · push `YCL_PAYMENT` ขึ้น abapGit~~ | ✅ `29c4a47` · src = snapshot |
+| 2 | ~~push เอกสาร repo~~ | ✅ |
 | 3 | (production) **WHT ต้องอ่านจาก customer master** ไม่ fix `MA`/`09`: หลาย type → หลาย entry · ไม่มี type → ไม่ส่ง node · base ควร = ยอดบรรทัด · view `I_CustomerWithHoldingTax` compile ไม่ผ่านบน tenant ต้องหาชื่อที่ released | ⏸️ นอก scope POC |
 | 4 | (production) BAdI `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO` derive assignment จาก invoice แทนค่า fix · 3 หลักท้าย `001` vs `003` ให้ functional ยืนยัน | ⏸️ นอก scope POC |
 | 5 | (production) PK 15 ทำไม่ได้ด้วย API นี้ — clearing ยืนยันว่า PK 11 clear ได้ จึงไม่ใช่ blocker | ℹ️ |

@@ -84,7 +84,7 @@ abapGit serialize ด้วย `FOLDER_LOGIC = FULL` · `STARTING_FOLDER = /src/
 | Object | Type | Status |
 |---|---|---|
 | `YPOC_PAYMENT` | Package | ✅ [`src/package.devc.xml`](src/package.devc.xml) |
-| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | 🟡 rev 18 final อยู่ใน docs/05 · รอ push abapGit |
+| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ✅ [`src/ycl_payment.clas.abap`](src/ycl_payment.clas.abap) |
 
 รายละเอียด + log อยู่ที่ [docs/02-object-list.md](docs/02-object-list.md)
 
