@@ -359,6 +359,7 @@ ACDOCA: 3 บรรทัด · `ProfitCenter DUMMY` · `Segment JASGROUP` · `B
 | `0011047003` WHT | `*` | X | | X | | `ZB14` | รับ tax code ได้ (config บอกว่าควรมี) |
 | `0021082003` output tax | `>` | | (ว่าง) | X | | `YB01` | post ตรงได้ |
 | `0021082005` deferred tax | `>` | | (ว่าง) | X | | `YB01` | post ตรงได้ |
+| `0011054001` dummy pair (ใบ SA) | (ว่าง) | | | **ไม่ใช่ OIM** | | `YB01` | เหมือน bank ทุกอย่างยกเว้นไม่ใช่ OIM — ใช้เป็นคู่ net 0 ให้ tax item derive business place (Q7 รอบ 2 · 2026-09-14) |
 
 ### Q8 — tax code ที่เคยใช้บน company code 1000
 

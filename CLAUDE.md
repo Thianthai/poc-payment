@@ -81,6 +81,13 @@ confirm แล้ว 2026-09-11 · prefix ตัวแปรตาม global rul
   (check อ่าน base ของ G/L line เอง · `TaxBaseAmount` ใน `_CurrencyAmount` ของ G/L item ไม่มีผล) ·
   tax item เลข item ซ้ำกับ G/L → `Line item entered several times` (BO ไม่รวมบรรทัดแบบ BAPI) ·
   `TaxItemAcctgDocItemRef` → FF 817 (TH ไม่ใช่ taxes-by-item) — **ห้ามเสียเวลาลองซ้ำ**
+- **ทางที่ผ่าน (2026-09-14)**: ใบ SA แยก = คู่ dummy `_GLItems` `0011054001` ±419.93 (ไม่มี tax code · มี
+  business place · บัญชีไม่ใช่ OIM) + `_TaxItems` DM/O1 direct `MWAS` base ±5,999 → `7200000001`
+  · คู่ G/L ให้ tax item derive business place · check "G/L item without tax code … deferred taxes"
+  **ไม่ฟ้อง** ในใบนี้ทั้งที่ `0011054001` tax category ว่างเหมือน bank → check น่าจะผูกกับเอกสารที่มี
+  AR/AP line (หรือ RFPI) — ไม่ได้พิสูจน์แยก
+- assignment `94000000052026001` บน O1 line มาจาก Custom Logic `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO`
+  (BAdI `FIN_ACDOC_ITEM_SUBSTITUTION`, fix ค่าสำหรับ POC) ไม่ใช่จาก API
 - inline `DATA( )` ใน `IMPORTING` ของ functional method call ที่อยู่ใน `IF` ใช้ไม่ได้
 - data element `acpi_zuonr` (assignment) ไม่ released → ใช้ `TYPE c LENGTH 18` เอง
 
