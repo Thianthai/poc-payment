@@ -6,7 +6,7 @@
 | # | Object | Type | ใครสร้าง | Status |
 |---|---|---|---|---|
 | 1 | `YPOC_PAYMENT` | Package | ผู้ใช้ (ADT) | ✅ [`src/package.devc.xml`](../src/package.devc.xml) |
-| 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | 🟡 rev 17 final ส่งแล้ว 2026-09-14 · รอ activate + push abapGit |
+| 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | 🟡 **rev 18 final** (2026-09-14 · clear ผ่านแล้ว) · รอ push abapGit |
 
 Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้วยังไม่ push · ✅ push ขึ้น repo แล้ว
 
@@ -82,6 +82,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-14 | **feedback จาก POC clearing**: clear `3300000026` ไม่ได้ — AIF `/FINAC`: "The open items display different withholding tax information from the relevant business partner master record" · customer `0001000082` มี WHT type ใน master แต่บรรทัดลูกหนี้ที่ API สร้างไม่มี WHT info (`WithholdingTaxCode` ว่าง) · Fiori เติมจาก master ให้เอง API ไม่เติม | 🟡 rev 18: เพิ่ม `_WithHoldingTaxItems` (amount 0 · ทุก type ที่ master มี) · ได้ field list + master (1 type: `MA`/`09`, WHT agent Yes) → ส่ง rev 18 |
 | 2026-09-14 | ส่ง **rev 18**: ใบ 1 + `_WithHoldingTaxItems` MA/09 amount 0 manual · `lv_simulate = abap_false` | ✅ **post ผ่านทั้ง 2 ใบ** — DZ **`3300000031`** (ref `POC0914055500`) + SA **`7200000002`** · commit MSG: `Document posted successfully: BKPFF 330000003110002026` / `720000000210002026` · ส่งให้ POC clearing ทดสอบ |
 | 2026-09-14 | Q6 `3300000031` + header 3 ใบ | ✅ บรรทัดลูกหนี้ `WithholdingTaxCode = XX` แล้ว (เหมือน `3300000017/005`) · ⚠️ ref ใบ SA ถูกทับเป็น `09060003` (ใบก่อน `09060002`) — น่าจะมี header substitution generate ref แบบ `MMDD+running` ให้ SA · ใบ DZ คง `POC…` · `POSTED:` query จึงเจอแค่ DZ → rev 19 จะ parse เลขจาก MSG commit แทน |
+| 2026-09-14 | **POC clearing clear ผ่าน** — clearing document **`3000000005`** (06:14 UTC) คลุม invoice `9400000005` 001/003 + payment `3300000031`/003 + deferred tax `7200000002`/003 | ✅ **POC ทั้งสองฝั่งปิด** · ยืนยัน: `_WithHoldingTaxItems` คือตัวทำให้ clear ได้ (`3300000026` ไม่มี → F5 787 ทุกครั้ง) · PK 11 + `InvoiceReference V` ไม่เป็นปัญหา · ใบ SA แยกใช้ได้ |
+| 2026-09-14 | assignment บน O1 = `…001` (BAdI fix ค่า) — ผู้ใช้ยืนยันใช้ได้สำหรับ POC เพราะ invoice เดิมทุกรอบ · 3 หลักท้าย (`001` vs ตัวอย่าง `003`) ให้ functional ยืนยัน | ✅ |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -99,7 +101,12 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 
 | # | เรื่อง | สถานะ |
 |---|---|---|
-| 1 | activate rev 17 + F9 simulate เช็ค payload 2 ใบ | ⬜ |
-| 2 | push `YCL_PAYMENT` ขึ้น abapGit → Claude อัปเดต status เป็น ✅ | ⬜ |
-| 3 | (production) BAdI derive assignment จาก invoice แทนค่า fix · เลข item ท้าย `…001` vs `…003` ให้ functional ยืนยัน | ⏸️ นอก scope POC |
-| 4 | (production) PK 15 / clearing / WHT code — ต้องเปลี่ยน API (Bank Statement) หรือยอมรับ PK 11 + Clearing API | ⏸️ นอก scope POC |
+| 1 | activate rev 18 (final · `lv_simulate = abap_true`) · push `YCL_PAYMENT` ขึ้น abapGit → Claude อัปเดต status ✅ | ⬜ |
+| 2 | push เอกสาร repo (commit local ค้างอยู่หลาย commit) | ⬜ รอผู้ใช้สั่ง |
+| 3 | (production) **WHT ต้องอ่านจาก customer master** ไม่ fix `MA`/`09`: หลาย type → หลาย entry · ไม่มี type → ไม่ส่ง node · base ควร = ยอดบรรทัด · view `I_CustomerWithHoldingTax` compile ไม่ผ่านบน tenant ต้องหาชื่อที่ released | ⏸️ นอก scope POC |
+| 4 | (production) BAdI `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO` derive assignment จาก invoice แทนค่า fix · 3 หลักท้าย `001` vs `003` ให้ functional ยืนยัน | ⏸️ นอก scope POC |
+| 5 | (production) PK 15 ทำไม่ได้ด้วย API นี้ — clearing ยืนยันว่า PK 11 clear ได้ จึงไม่ใช่ blocker | ℹ️ |
+| 6 | (nice to have) `post_entry` parse เลขเอกสารจาก MSG commit แทน `SELECT` ด้วย reference (ใบ SA ถูก substitution ทับ ref เป็น `0906xxxx`) | ⏸️ |
+
+test data ชุดสุดท้าย (`9400000005` + `3300000031` + `7200000002`) ถูก clear แล้วโดย `3000000005` —
+ถ้าจะ post ซ้ำต้องใช้ invoice ใบอื่น หรือให้ฝั่ง clearing reverse `3000000005` ก่อน

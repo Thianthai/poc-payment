@@ -35,16 +35,19 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 
 ผลที่ได้จาก POC นี้คือเอกสาร DZ ที่ **ค้างเป็น open item บน customer** ไม่ได้ผูกกับ invoice
 
-## ผลลัพธ์ POC — ✅ post ได้ด้วย 2 เอกสาร (2026-09-14)
+## ผลลัพธ์ POC — ✅ สำเร็จ · post 2 ใบ แล้ว clear ได้ด้วย POC clearing (2026-09-14)
 
-`YCL_PAYMENT` อ่าน invoice `9400000005` แล้ว post **2 ใบใน commit เดียว**:
+`YCL_PAYMENT` อ่าน invoice `9400000005` แล้ว post **2 ใบใน commit เดียว** จากนั้น
+[`poc-clearing`](https://github.com/Thianthai/poc-clearing) clear ทั้งหมดด้วย clearing document **`3000000005`**
 
-| ใบ | Type | เอกสารที่ได้ | บรรทัด |
+| ใบ | Type | เอกสาร | บรรทัด |
 |---|---|---|---|
-| 1 payment | `DZ` `RFPI` | **`3300000026`** | bank `0011092001` +6,238.96 · WHT `0011047003` +179.97 · customer `0001000082` −6,418.93 |
-| 2 deferred tax transfer | `SA` `RFBU` | **`7200000001`** | dummy `0011054001` +419.93 / −419.93 · `DM` +419.93 base 5,999 · `O1` −419.93 base −5,999 |
+| 1 payment | `DZ` `RFPI` | **`3300000031`** | bank `0011092001` +6,238.96 · WHT `0011047003` +179.97 · customer `0001000082` −6,418.93 (+ WHT item type `MA` code `09`) |
+| 2 deferred tax transfer | `SA` `RFBU` | **`7200000002`** | dummy `0011054001` +419.93 / −419.93 · `DM` +419.93 base 5,999 · `O1` −419.93 base −5,999 (+ BAdI ใส่ assignment) |
 
-(ทั้งคู่ reverse แล้วเป็น `3300000030` / `7900000000` · รอบก่อนหน้า `3300000024` = ใบ 1 อย่างเดียว)
+clearing `3000000005` คลุม: invoice 001 (+6,418.93) ↔ payment 003 (−6,418.93) · invoice 003 deferred (−419.93) ↔ SA 003 (+419.93)
+
+รอบก่อนหน้า: `3300000024` (ใบ 1 อย่างเดียว) · `3300000026` + `7200000001` (2 ใบ แต่ไม่มี WHT item → clear ไม่ได้ F5 787 · reverse แล้ว)
 
 ### เทียบกับตัวอย่าง `3300000017` (Post Incoming Payments)
 
@@ -52,24 +55,27 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 |---|---|---|---|
 | bank +6,238.96 | PK 40 · house bank · value date · text · bplace | เหมือนทุก field | ✅ |
 | WHT +179.97 | PK 40 | เหมือนทุก field | ✅ |
-| deferred `DM` +419.93 / output `O1` −419.93 | อยู่ในใบ payment · TaxType A · base 5,999 · `TTD = MWS` | อยู่**ใบ SA แยก** · TaxType A · base 5,999 · `TTD` ว่าง · + คู่ dummy `0011054001` | ⚠️ functional ยอมรับ split |
-| customer −6,418.93 | **PK 15** incoming payment · `WithholdingTaxCode XX` | **PK 11** credit memo · WHT code ว่าง | ❌ ข้อจำกัด API — `_ARItems` สร้างได้แค่ 01/11 |
-| assignment บน `O1` | `94000000052026003` | `94000000052026001` จาก Custom Logic `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO` (fix ค่า) | ⚠️ ต้อง derive จริงตอนทำ production |
+| customer −6,418.93 | **PK 15** · `WithholdingTaxCode XX` | **PK 11** credit memo · `XX` (จาก `_WithHoldingTaxItems`) | ⚠️ PK ต่าง แต่ clearing ยืนยันว่า clear ได้เหมือนกัน |
+| deferred `DM` / output `O1` | อยู่ในใบ payment · `TTD = MWS` | อยู่**ใบ SA แยก** · `TTD` ว่าง · + คู่ dummy `0011054001` | ⚠️ functional ยอมรับ split · clear ได้ |
+| assignment บน `O1` | `94000000052026003` | `94000000052026001` จาก Custom Logic (fix ค่า) | ⚠️ 3 หลักท้ายให้ functional ยืนยัน |
 
 ### สิ่งที่พิสูจน์ได้
 
 - ABAP Cloud console class เรียก `I_JournalEntryTP~Post` ได้ตรง ๆ ไม่ต้องมี communication arrangement
 - post หลายใบใน `MODIFY ENTITIES` + `COMMIT ENTITIES` เดียว — fail ใบใดใบหนึ่ง rollback ทั้งหมด
-- บรรทัดโอน deferred tax post ผ่าน API ได้ **เฉพาะเมื่อแยกใบ** และต้องมี G/L line ในใบเดียวกัน (คู่ dummy net 0)
+- บรรทัดโอน deferred tax post ผ่าน API ได้ **เฉพาะเมื่อแยกใบ** และมีคู่ dummy G/L net 0 ในใบเดียวกัน
   ให้ tax item derive business place — 16 รูปแบบอื่นชน check มาตรฐานของ FI ทั้งหมด (docs/02)
+- **บรรทัดลูกหนี้ต้องมี `_WithHoldingTaxItems` ครบทุก type ตาม customer master** (amount 0 ได้)
+  ไม่งั้น clearing ปฏิเสธ F5 787 — Fiori เติมให้เอง API ไม่เติม
+- เอกสารจาก API (PK 11) clear กับ invoice ผ่าน Clearing API ได้ — PK 15 ไม่ใช่เงื่อนไข
 
-### ข้อจำกัดที่ต้องรู้ก่อนเอาไปทำต่อ
+### ข้อจำกัด / สิ่งที่ต้องทำต่อก่อน production
 
-- **PK 15 ทำไม่ได้** — API นี้เป็น journal entry ไม่ใช่ payment transaction · ถ้าเป็น must ต้องใช้ Bank Statement / Post Incoming Payments
-- ไม่ clear open item (ต้องต่อด้วย Clearing API) · ไม่ derive `WithholdingTaxCode` จาก customer master
-- ใบเดียว 5 บรรทัดทำไม่ได้ — bank line (tax category ว่าง) ชนกฎ "ทุก G/L line ต้องมี tax code เมื่อมี deferred code"
-- Custom Logic ใส่ assignment เป็นค่า fix — production ต้อง derive จาก invoice (เช่น ส่ง key มากับ header ใบ SA)
+- WHT type/code ต้องอ่านจาก customer master ของลูกค้าแต่ละราย (หลาย type → หลาย entry · ไม่มี → ไม่ส่ง)
+- Custom Logic `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO` ใส่ assignment เป็นค่า fix — ต้อง derive จาก invoice
+- ไม่ derive `WithholdingTaxCode` เอง · ไม่ clear (เป็นงานของ Clearing API) · PK 15 ทำไม่ได้
 - คู่ dummy `0011054001` โผล่ใน line item ของบัญชีนั้น (net 0 · ไม่ใช่ OIM)
+- reference ของใบ SA ถูก substitution ทับเป็น `0906xxxx` — หาเลขเอกสารจาก MSG commit แทน
 
 ## Object บน repo
 
@@ -78,7 +84,7 @@ abapGit serialize ด้วย `FOLDER_LOGIC = FULL` · `STARTING_FOLDER = /src/
 | Object | Type | Status |
 |---|---|---|
 | `YPOC_PAYMENT` | Package | ✅ [`src/package.devc.xml`](src/package.devc.xml) |
-| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | 🟡 rev 17 final อยู่ใน docs/05 · รอ push abapGit |
+| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | 🟡 rev 18 final อยู่ใน docs/05 · รอ push abapGit |
 
 รายละเอียด + log อยู่ที่ [docs/02-object-list.md](docs/02-object-list.md)
 

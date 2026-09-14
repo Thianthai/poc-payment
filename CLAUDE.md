@@ -22,7 +22,8 @@ console class บน S/4HANA Cloud Public Edition เพื่อ post **incomin
 - **เอกสารที่ post ต้อง clear ได้ด้วย POC clearing** (`poc-clearing`) — บรรทัดลูกหนี้ต้องมี WHT info
   ครบทุก type ตาม customer master ไม่งั้น clearing ปฏิเสธ (AIF: "open items display different
   withholding tax information from the relevant business partner master record") → ต้องส่ง
-  `_WithHoldingTaxItems` amount 0 ทุก type (feedback 2026-09-14)
+  `_WithHoldingTaxItems` amount 0 ทุก type (feedback 2026-09-14) · **พิสูจน์แล้ว**: `3300000031` (มี WHT item)
+  clear ผ่านด้วย `3000000005` · PK 11 ไม่ใช่ปัญหา
 - ไม่มี communication scenario / arrangement — เรียก BO ในเครื่อง ไม่มี HTTP
 
 ## Naming ที่ใช้ใน project นี้

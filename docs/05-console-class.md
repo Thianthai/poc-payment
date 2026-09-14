@@ -1,8 +1,8 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-**revision 18** · 2026-09-14 · `lv_simulate = abap_false` (ทดสอบให้ clearing) · rev 17 + `_WithHoldingTaxItems` type MA/09 บนบรรทัดลูกหนี้
-· rev 17 พิสูจน์แล้วด้วย `3300000026` + `7200000001` แต่ clearing ปฏิเสธเพราะบรรทัดลูกหนี้ไม่มี WHT info
+**revision 18 (final)** · 2026-09-14 · `lv_simulate = abap_true` · rev 17 + `_WithHoldingTaxItems` type MA/09 บนบรรทัดลูกหนี้
+· พิสูจน์แล้ว: post `3300000031` + `7200000002` → POC clearing clear ผ่านด้วย `3000000005`
 
 ## แนวคิด
 
@@ -37,7 +37,7 @@ main           read → build → print → (lv_simulate = abap_false) post
 | 7–8 | 2 ใบ · ใบ 2 tax item ล้วน + `MWAS` | `KSCHL is empty` → แก้ · เหลือ `Enter a business place.` (tax item ไม่มี field) |
 | 10–16 | tax line เป็น `_GLItems` ทุกแบบ (ไม่มี/มี tax code · + tax item amount 0 · item ref · เลขซ้ำ) | `requires a valid tax code` · `Tax statement item missing` · FF 817 · `tax base 0` · `Line item entered several times` |
 | **17** | **ใบ 2 = คู่ dummy `_GLItems` `0011054001` ±419.93 + `_TaxItems` DM/O1 direct** | คู่ G/L ให้ tax item derive business place · **post ผ่าน `7200000001`** (2026-09-14) |
-| 18 | ใบ 1 + `_WithHoldingTaxItems` (`GLAccountLineItem 3` · type `MA` · code `09` · amount/base 0 · manual flag) | POC clearing: `3300000026` clear ไม่ได้ — บรรทัดลูกหนี้ไม่มี WHT type ตาม customer master |
+| **18** | **ใบ 1 + `_WithHoldingTaxItems`** (`GLAccountLineItem 3` · type `MA` · code `09` · amount/base 0 · manual flag) | POC clearing: `3300000026` clear ไม่ได้ (F5 787) — บรรทัดลูกหนี้ไม่มี WHT type ตาม customer master · **แก้แล้ว clear ผ่าน `3000000005`** |
 
 ## Source
 
@@ -97,7 +97,7 @@ CLASS ycl_payment IMPLEMENTATION.
     DATA ls_tax_item TYPE ty_invoice_item.
 
     " abap_true = พิมพ์ payload อย่างเดียว · abap_false = post จริง (ได้เอกสารใหม่ทุกครั้งที่กด F9)
-    DATA(lv_simulate) = abap_false.
+    DATA(lv_simulate) = abap_true.
 
     out->write( 'YCL_PAYMENT — post incoming payment from invoice 1000 / 9400000005 / 2026' ).
 
