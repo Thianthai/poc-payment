@@ -14,7 +14,15 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 
 ## Config ที่ไม่ใช่ repository object
 
-ไม่มี — `I_JournalEntryTP` เรียกในเครื่อง ไม่ต้องมี communication scenario / arrangement
+ไม่มี communication scenario / arrangement — `I_JournalEntryTP` เรียกในเครื่อง
+
+| # | สิ่งที่ทำ | ที่ | Status |
+|---|---|---|---|
+| C1 | **Custom Logic `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO`** (BAdI `FIN_ACDOC_ITEM_SUBSTITUTION`) — ถ้า `AccountingDocumentType = SA` และ `TaxCode = O1` → `AssignmentReference = '94000000052026001'` (fix ค่าสำหรับ POC · functional ต้องการเพื่อรายงานภาษี) | Fiori: Custom Logic (Key User Extensibility) · published 2026-09-11 11:35 | ✅ อยู่นอก abapGit |
+
+> ตอนทำจริง BAdI ต้อง derive จาก invoice ไม่ใช่ fix — ทางที่เป็นไปได้: `YCL_PAYMENT` ส่ง key ของ invoice
+> มากับ header ใบ SA (`Reference1InDocumentHeader` / `AccountingDocumentHeaderText`) แล้ว BAdI อ่านจาก
+> `accountingdocheader` · และเลข item ท้าย (`…001` vs ตัวอย่าง `…003`) ต้องให้ functional ยืนยัน
 
 ## ลำดับการทำ
 
