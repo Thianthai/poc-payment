@@ -1,8 +1,8 @@
 # 05 — Console Class `YCL_PAYMENT` (snapshot)
 
 source of truth คือ tenant · ไฟล์นี้เป็น snapshot ไว้อ่านเท่านั้น
-**revision 17 (final)** · 2026-09-14 · `lv_simulate = abap_true` · post 2 ใบ: DZ payment + SA deferred tax transfer
-· พิสูจน์แล้วด้วย `3300000026` + `7200000001`
+**revision 18** · 2026-09-14 · `lv_simulate = abap_false` (ทดสอบให้ clearing) · rev 17 + `_WithHoldingTaxItems` type MA/09 บนบรรทัดลูกหนี้
+· rev 17 พิสูจน์แล้วด้วย `3300000026` + `7200000001` แต่ clearing ปฏิเสธเพราะบรรทัดลูกหนี้ไม่มี WHT info
 
 ## แนวคิด
 
@@ -37,6 +37,7 @@ main           read → build → print → (lv_simulate = abap_false) post
 | 7–8 | 2 ใบ · ใบ 2 tax item ล้วน + `MWAS` | `KSCHL is empty` → แก้ · เหลือ `Enter a business place.` (tax item ไม่มี field) |
 | 10–16 | tax line เป็น `_GLItems` ทุกแบบ (ไม่มี/มี tax code · + tax item amount 0 · item ref · เลขซ้ำ) | `requires a valid tax code` · `Tax statement item missing` · FF 817 · `tax base 0` · `Line item entered several times` |
 | **17** | **ใบ 2 = คู่ dummy `_GLItems` `0011054001` ±419.93 + `_TaxItems` DM/O1 direct** | คู่ G/L ให้ tax item derive business place · **post ผ่าน `7200000001`** (2026-09-14) |
+| 18 | ใบ 1 + `_WithHoldingTaxItems` (`GLAccountLineItem 3` · type `MA` · code `09` · amount/base 0 · manual flag) | POC clearing: `3300000026` clear ไม่ได้ — บรรทัดลูกหนี้ไม่มี WHT type ตาม customer master |
 
 ## Source
 
@@ -96,7 +97,7 @@ CLASS ycl_payment IMPLEMENTATION.
     DATA ls_tax_item TYPE ty_invoice_item.
 
     " abap_true = พิมพ์ payload อย่างเดียว · abap_false = post จริง (ได้เอกสารใหม่ทุกครั้งที่กด F9)
-    DATA(lv_simulate) = abap_true.
+    DATA(lv_simulate) = abap_false.
 
     out->write( 'YCL_PAYMENT — post incoming payment from invoice 1000 / 9400000005 / 2026' ).
 
@@ -263,7 +264,23 @@ CLASS ycl_payment IMPLEMENTATION.
               businessplace     = '0000'
               _currencyamount   = VALUE #( ( currencyrole           = '00'
                                              currency               = lv_currency
-                                             journalentryitemamount = lv_customer_amount ) ) ) ) ) )
+                                             journalentryitemamount = lv_customer_amount ) ) ) )
+
+          " WHT info ของบรรทัดลูกหนี้ — ต้องมีครบทุก type ตาม customer master ไม่งั้น clearing ปฏิเสธ
+          " ("open items display different withholding tax information from the business partner master record")
+          " customer 0001000082 มี 1 type: MA (A/R at payment) code 09 (Service 3%)
+          " amount/base = 0 + manual flag → แค่ให้ข้อมูล type ติดไปกับบรรทัด ไม่ให้ระบบคำนวณ/สร้างบรรทัด WHT ซ้อน
+          " (บรรทัด WHT 179.97 ส่งเป็น G/L 0011047003 อยู่แล้ว ตามเอกสารตัวอย่าง)
+          _withholdingtaxitems = VALUE #(
+            ( glaccountlineitem             = '3'                        " ผูกกับบรรทัดลูกหนี้ [3]
+              withholdingtaxtype            = 'MA'
+              withholdingtaxcode            = '09'
+              whldgtaxisenteredmanually     = abap_true
+              whldgtaxbaseisenteredmanually = abap_true
+              _currencyamount               = VALUE #( ( currencyrole           = '00'
+                                                         currency               = lv_currency
+                                                         journalentryitemamount = 0
+                                                         taxbaseamount          = 0 ) ) ) ) ) )
 
       " ================= ใบ 2: โอน deferred tax DM → O1 (SA) → เช่น 7200000001 =================
       ( %cid   = |TAX{ lv_now }|
@@ -361,6 +378,13 @@ CLASS ycl_payment IMPLEMENTATION.
         lv_total += ls_ar_amount-journalentryitemamount.
         io_out->write( |  _ARItems[{ ls_ar-glaccountlineitem }] customer { ls_ar-customer } bplace { ls_ar-businessplace } | &&
                        |{ ls_ar_amount-journalentryitemamount } { ls_ar_amount-currency }| ).
+      ENDLOOP.
+
+      LOOP AT ls_entry-%param-_withholdingtaxitems INTO DATA(ls_wht).
+        READ TABLE ls_wht-_currencyamount INTO DATA(ls_wht_amount) INDEX 1.
+        io_out->write( |  _WithHoldingTaxItems[{ ls_wht-glaccountlineitem }] type { ls_wht-withholdingtaxtype } | &&
+                       |code { ls_wht-withholdingtaxcode } { ls_wht_amount-journalentryitemamount } | &&
+                       |base { ls_wht_amount-taxbaseamount } manual { ls_wht-whldgtaxisenteredmanually }/{ ls_wht-whldgtaxbaseisenteredmanually }| ).
       ENDLOOP.
 
       io_out->write( |Balance check: { lv_total } (must be 0)| ).

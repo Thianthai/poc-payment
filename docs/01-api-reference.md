@@ -84,7 +84,7 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `_ARItems` [0..*] | `D_JournalEntryPostARItemP` | ✅ 1 บรรทัด customer |
 | `_APItems` [0..*] | `D_JournalEntryPostAPItemP` | ไม่ใช้ |
 | `_TaxItems` [0..*] | `D_JournalEntryPostTaxItemP` | ✅ ใบ 2: deferred → output tax (DM/O1) direct — post ผ่านเมื่อมีคู่ dummy `_GLItems` ในใบเดียวกัน |
-| `_WithHoldingTaxItems` [0..*] | `D_JournalEntryPostWhgdItemP` | ไม่ใช้ (WHT line ของตัวอย่างเป็น G/L ธรรมดา) |
+| `_WithHoldingTaxItems` [0..*] | `D_JournalEntryPostWhgdItemP` | ✅ ใบ 1: 1 entry ต่อ WHT type ใน customer master (`MA`/`09`) amount 0 — ไม่มีจะ clear ไม่ได้ (rev 18) |
 | `_OneTimeCustomerSupplier` [0..1] | `D_JournalEntryPostCPDP` | ไม่ใช้ |
 
 ### `_GLItems` — `D_JournalEntryPostGLItemP` (ยืนยันจาก tenant)
@@ -131,6 +131,22 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 >
 > ใส่ tax item ในใบ payment ไม่ได้ → ชน `G/L account item without tax code in document with deferred
 > taxes` ที่ bank line (tax category ว่าง) — check นี้ไม่ฟ้องในใบ SA ที่ไม่มี AR line
+
+### `_WithHoldingTaxItems` — `D_JournalEntryPostWhgdItemP` (ยืนยันจาก tenant)
+
+| Field | DDIC | POC ใช้ |
+|---|---|---|
+| `GLAccountLineItem` | `docln6` | ✅ = เลข item ของบรรทัดลูกหนี้ที่ WHT ผูกด้วย (`3`) |
+| `WithholdingTaxType` | `witht` | ✅ `MA` (A/R at Payment & No cert. numbering 1) — จาก customer master |
+| `WithholdingTaxCode` | `wt_withcd` | ✅ `09` (Service 3%) — จาก customer master |
+| `WhldgTaxIsEnteredManually` | `wt_amnman` | ✅ `X` — ให้ค่าเอง ไม่ให้ระบบคำนวณ |
+| `WhldgTaxBaseIsEnteredManually` | `wt_basman` | ✅ `X` |
+| `_CurrencyAmount` | association [0..*] → `D_JournalEntryPostCurrencyAmtP` | ✅ `JournalEntryItemAmount 0` · `TaxBaseAmount 0` (ตามตัวอย่าง `3300000017/005`: base/amount 0) |
+
+> ทำไมต้องส่ง: clearing (POC clearing) เช็คว่า WHT type บน open item ต้องตรงกับ customer master
+> ทุก type — Fiori เติมให้เองจาก master แต่ API ไม่เติม (`3300000026` clear ไม่ได้)
+> · WHT จริง 179.97 ยังส่งเป็น G/L `0011047003` ตามตัวอย่าง (ทางเลือกที่ยังไม่ลอง: ให้ระบบคำนวณเองจาก base)
+> · `XX` ที่เห็นใน `I_OperationalAcctgDocItem.WithholdingTaxCode` เป็น classic WHT field ไม่ใช่ตัวนี้
 
 ### `_ARItems` — `D_JournalEntryPostARItemP` (ยืนยันจาก tenant)
 
