@@ -19,6 +19,10 @@ console class บน S/4HANA Cloud Public Edition เพื่อ post **incomin
   (requirement เพิ่ม 2026-09-11)
 - ค่าที่ไม่ได้มาจาก invoice (house bank, tax code mapping, อัตรา WHT ถ้า fix) เป็น constant
 - **functional ยอมรับ split 2 ใบ** (2026-09-14): ใบ 1 DZ (bank/WHT/customer) + ใบ 2 โอน deferred tax DM→O1
+- **เอกสารที่ post ต้อง clear ได้ด้วย POC clearing** (`poc-clearing`) — บรรทัดลูกหนี้ต้องมี WHT info
+  ครบทุก type ตาม customer master ไม่งั้น clearing ปฏิเสธ (AIF: "open items display different
+  withholding tax information from the relevant business partner master record") → ต้องส่ง
+  `_WithHoldingTaxItems` amount 0 ทุก type (feedback 2026-09-14)
 - ไม่มี communication scenario / arrangement — เรียก BO ในเครื่อง ไม่มี HTTP
 
 ## Naming ที่ใช้ใน project นี้
