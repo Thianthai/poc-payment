@@ -18,6 +18,7 @@ console class บน S/4HANA Cloud Public Edition เพื่อ post **incomin
   ไม่ใช่ fix 5 บรรทัดลง constant · ตัวอย่าง invoice `9400000005` → payment `3300000017`
   (requirement เพิ่ม 2026-09-11)
 - ค่าที่ไม่ได้มาจาก invoice (house bank, tax code mapping, อัตรา WHT ถ้า fix) เป็น constant
+- **functional ยอมรับ split 2 ใบ** (2026-09-14): ใบ 1 DZ (bank/WHT/customer) + ใบ 2 โอน deferred tax DM→O1
 - ไม่มี communication scenario / arrangement — เรียก BO ในเครื่อง ไม่มี HTTP
 
 ## Naming ที่ใช้ใน project นี้

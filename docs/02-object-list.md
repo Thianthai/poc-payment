@@ -66,6 +66,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-11 | ส่ง rev 14: tax item เลข 3/4 ตรงกับ G/L line · direct · ยอด/base จริง | ❌ **post จริงครั้งที่ 15** — `FI/CO interface: Line item entered several times` → item number ต้อง unique ข้าม node · BO ไม่รวม G/L + tax item แบบ BAPI |
 | 2026-09-11 | ส่ง rev 15: tax item 6/7 direct amount 0 base ±5,999 (ตัวเลือกสุดท้าย) | ❌ **post จริงครั้งที่ 16** — `tax base 0` เหมือน rev 13 → check อ่าน base ของ G/L line เอง · `TaxBaseAmount` บน G/L item ไม่ถูกส่งต่อ · **หมดทุกทาง (16 รอบ)** → เสนอปิด POC |
 | 2026-09-11 | ผู้ใช้ขอกลับไปเวอร์ชัน 2 ใบ (rev 8) แล้วเปลี่ยนใบ 2 เป็น `_GLItems` + tax code DM/O1 + business place (rev 16) | ❌ **post จริงครั้งที่ 17** — ใบ 1 `no errors` · ใบ 2 `Tax statement item missing for tax code DM` (G/L + tax code = base line ไม่ว่าใบไหน) · เสนอ rev 17 เติม tax item amount 0 ในใบ 2 (คาดว่าชน `tax base 0`) |
+| 2026-09-14 | **functional ยืนยัน: split เป็น 2 ใบได้** (DZ payment + ใบโอน deferred tax แยก) · ผู้ใช้ทดลองใบ 2 แบบ `_GLItems` 2 บรรทัด `0021082003` + `O1` ทั้งคู่ (ไม่มี DM) | 🟡 รอผล |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 

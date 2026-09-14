@@ -30,6 +30,7 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 | ทำ | post เอกสาร incoming payment (doc type `DZ`) — Dr bank / Cr customer |
 | Input | **invoice** (company code + เลขเอกสาร + ปี) — class อ่านบรรทัดของ invoice จาก CDS แล้ว derive บรรทัด payment เอง (เพิ่ม 2026-09-11 · ตัวอย่าง: invoice `9400000005` → payment `3300000017`) |
 | **ไม่ทำ** | **clear open item ของ invoice** — `I_JournalEntryTP~Post` ไม่ clear ให้ (SAP ยืนยันเอง) ถ้าจะ clear ต้องต่อด้วย Clearing API จาก POC ก่อนหน้าเป็นอีกขั้น |
+| Split | **functional ยอมรับ 2 ใบ** (2026-09-14): DZ payment 3 บรรทัด + ใบโอน deferred tax DM→O1 แยก — เพราะใบเดียว 5 บรรทัดชนกฎ deferred tax ที่บรรทัด bank |
 | Simulate | `gc_simulate = abap_true` พิมพ์ payload ออก console ไม่ยิง `EXECUTE post` · เปลี่ยนเป็น `abap_false` เมื่อจะ post จริง (`Post` ไม่มี test-run flag ในตัว) |
 
 ผลที่ได้จาก POC นี้คือเอกสาร DZ ที่ **ค้างเป็น open item บน customer** ไม่ได้ผูกกับ invoice
