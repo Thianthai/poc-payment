@@ -35,22 +35,41 @@ YCL_PAYMENT ──MODIFY ENTITIES OF i_journalentrytp──▶ I_JournalEntryTP~
 
 ผลที่ได้จาก POC นี้คือเอกสาร DZ ที่ **ค้างเป็น open item บน customer** ไม่ได้ผูกกับ invoice
 
-## ผลลัพธ์ POC (2026-09-11) — post ได้ แต่ไม่เหมือนตัวอย่างทุกจุด
+## ผลลัพธ์ POC — ✅ post ได้ด้วย 2 เอกสาร (2026-09-14)
 
-`YCL_PAYMENT` post เอกสาร **`3300000024`** (DZ · 3 บรรทัด) จาก invoice `9400000005` สำเร็จ
+`YCL_PAYMENT` อ่าน invoice `9400000005` แล้ว post **2 ใบใน commit เดียว**:
 
-| บรรทัด | ตัวอย่าง `3300000017` (Post Incoming Payments) | API | สถานะ |
+| ใบ | Type | เอกสารที่ได้ | บรรทัด |
 |---|---|---|---|
-| bank `0011092001` +6,238.96 | PK 40 | PK 40 เหมือนทุก field | ✅ |
-| WHT `0011047003` +179.97 | PK 40 | PK 40 เหมือนทุก field | ✅ |
-| deferred `DM` +419.93 / output `O1` −419.93 | มี (generate ตอน clear) | ยังไม่ได้ — ชน check deferred tax · กำลังทดลอง | 🟡 |
-| customer `0001000082` −6,418.93 | **PK 15** incoming payment | **PK 11** credit memo | ❌ **ข้อจำกัด API** — `_ARItems` สร้างได้แค่ 01/11 |
+| 1 payment | `DZ` `RFPI` | **`3300000026`** | bank `0011092001` +6,238.96 · WHT `0011047003` +179.97 · customer `0001000082` −6,418.93 |
+| 2 deferred tax transfer | `SA` `RFBU` | **`7200000001`** | dummy `0011054001` +419.93 / −419.93 · `DM` +419.93 base 5,999 · `O1` −419.93 base −5,999 |
 
-ข้อจำกัดที่พิสูจน์แล้ว (รายละเอียดใน [docs/04](docs/04-data-export-sql.md)):
+(ทั้งคู่ reverse แล้วเป็น `3300000030` / `7900000000` · รอบก่อนหน้า `3300000024` = ใบ 1 อย่างเดียว)
 
-- **PK 15 ทำไม่ได้** — ถ้าเป็น must ต้องใช้ payment transaction (Post Incoming Payments / Bank Statement) ไม่ใช่ Journal Entry Post
-- ไม่ clear open item · ไม่ derive `WithholdingTaxCode` จาก customer master
-- บรรทัดโอน deferred tax ต้องส่งเป็น `_TaxItems` และเอกสารต้องผ่านกฎ "ทุก G/L line ที่ tax-relevant ต้องมี tax code"
+### เทียบกับตัวอย่าง `3300000017` (Post Incoming Payments)
+
+| บรรทัด | ตัวอย่าง | API | สถานะ |
+|---|---|---|---|
+| bank +6,238.96 | PK 40 · house bank · value date · text · bplace | เหมือนทุก field | ✅ |
+| WHT +179.97 | PK 40 | เหมือนทุก field | ✅ |
+| deferred `DM` +419.93 / output `O1` −419.93 | อยู่ในใบ payment · TaxType A · base 5,999 · `TTD = MWS` | อยู่**ใบ SA แยก** · TaxType A · base 5,999 · `TTD` ว่าง · + คู่ dummy `0011054001` | ⚠️ functional ยอมรับ split |
+| customer −6,418.93 | **PK 15** incoming payment · `WithholdingTaxCode XX` | **PK 11** credit memo · WHT code ว่าง | ❌ ข้อจำกัด API — `_ARItems` สร้างได้แค่ 01/11 |
+| assignment บน `O1` | `94000000052026003` | `94000000052026001` จาก Custom Logic `YY1_FIN_ACDOC_ITEM_SUBSTITUTIO` (fix ค่า) | ⚠️ ต้อง derive จริงตอนทำ production |
+
+### สิ่งที่พิสูจน์ได้
+
+- ABAP Cloud console class เรียก `I_JournalEntryTP~Post` ได้ตรง ๆ ไม่ต้องมี communication arrangement
+- post หลายใบใน `MODIFY ENTITIES` + `COMMIT ENTITIES` เดียว — fail ใบใดใบหนึ่ง rollback ทั้งหมด
+- บรรทัดโอน deferred tax post ผ่าน API ได้ **เฉพาะเมื่อแยกใบ** และต้องมี G/L line ในใบเดียวกัน (คู่ dummy net 0)
+  ให้ tax item derive business place — 16 รูปแบบอื่นชน check มาตรฐานของ FI ทั้งหมด (docs/02)
+
+### ข้อจำกัดที่ต้องรู้ก่อนเอาไปทำต่อ
+
+- **PK 15 ทำไม่ได้** — API นี้เป็น journal entry ไม่ใช่ payment transaction · ถ้าเป็น must ต้องใช้ Bank Statement / Post Incoming Payments
+- ไม่ clear open item (ต้องต่อด้วย Clearing API) · ไม่ derive `WithholdingTaxCode` จาก customer master
+- ใบเดียว 5 บรรทัดทำไม่ได้ — bank line (tax category ว่าง) ชนกฎ "ทุก G/L line ต้องมี tax code เมื่อมี deferred code"
+- Custom Logic ใส่ assignment เป็นค่า fix — production ต้อง derive จาก invoice (เช่น ส่ง key มากับ header ใบ SA)
+- คู่ dummy `0011054001` โผล่ใน line item ของบัญชีนั้น (net 0 · ไม่ใช่ OIM)
 
 ## Object บน repo
 
@@ -59,7 +78,7 @@ abapGit serialize ด้วย `FOLDER_LOGIC = FULL` · `STARTING_FOLDER = /src/
 | Object | Type | Status |
 |---|---|---|
 | `YPOC_PAYMENT` | Package | ✅ [`src/package.devc.xml`](src/package.devc.xml) |
-| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ⬜ |
+| `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | 🟡 rev 17 final อยู่ใน docs/05 · รอ push abapGit |
 
 รายละเอียด + log อยู่ที่ [docs/02-object-list.md](docs/02-object-list.md)
 

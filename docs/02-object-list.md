@@ -6,7 +6,7 @@
 | # | Object | Type | ใครสร้าง | Status |
 |---|---|---|---|---|
 | 1 | `YPOC_PAYMENT` | Package | ผู้ใช้ (ADT) | ✅ [`src/package.devc.xml`](../src/package.devc.xml) |
-| 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | ⬜ |
+| 2 | `YCL_PAYMENT` | Class (console, `IF_OO_ADT_CLASSRUN`) | ผู้ใช้ (ADT) | 🟡 rev 17 final ส่งแล้ว 2026-09-14 · รอ activate + push abapGit |
 
 Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้วยังไม่ push · ✅ push ขึ้น repo แล้ว
 
@@ -77,7 +77,8 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 | 2026-09-14 | **functional ยืนยัน: split เป็น 2 ใบได้** (DZ payment + ใบโอน deferred tax แยก) | ✅ |
 | 2026-09-14 | ✅ **POST ผ่านทั้ง 2 ใบ** — payment **`3300000026`** (DZ 3 บรรทัด · ref `POC0911113752`) + deferred tax **`7200000001`** (SA · ref `09060002`) · reverse แล้วเป็น `3300000030` / `7900000000` | ใบ 2 = คู่ dummy `_GLItems` **`0011054001`** ±419.93 (ไม่มี tax code · มี business place) + `_TaxItems` DM/O1 direct `MWAS` base ±5,999 → คู่ G/L ให้ tax item derive business place · ใบไม่มี bank/WHT → deferred check ไม่ฟ้อง |
 | 2026-09-14 | เทียบ `7200000001` บรรทัด 003/004 กับ `3300000017` | ✅ G/L · DM/O1 · ±419.93 · base ±5,999 · TaxType A · group 001/002 · bplace · TaxDate เหมือน · ⚠️ `TransactionTypeDetermination` ว่าง (ตัวอย่าง `MWS`) · assignment O1 = `…001` (derive เอง) · มีคู่ `0011054001` เพิ่ม |
-| 2026-09-14 | Q7 `0011054001`: tax category ว่าง (เหมือน bank) · ไม่ใช่ OIM | → check deferred tax ไม่ได้ขึ้นกับบัญชี แต่ขึ้นกับโครงเอกสาร (ใบไม่มี AR line / RFBU) · assignment O1 มาจาก BAdI C1 · รอ confirm ส่ง rev 17 final |
+| 2026-09-14 | Q7 `0011054001`: tax category ว่าง (เหมือน bank) · ไม่ใช่ OIM | → check deferred tax ไม่ได้ขึ้นกับบัญชี แต่ขึ้นกับโครงเอกสาร (ใบไม่มี AR line / RFBU) · assignment O1 มาจาก BAdI C1 |
+| 2026-09-14 | ส่ง **rev 17 final** (2 ใบ · `lv_simulate = abap_true`) · sync snapshot / README / docs/01 | ✅ รอผู้ใช้ activate + push abapGit (ยังไม่ push repo ตามที่สั่ง) |
 
 ### ยังพิสูจน์ไม่ได้ (รออะไรอยู่)
 
@@ -95,10 +96,7 @@ Legend: ⬜ ยังไม่สร้าง · 🟡 สร้างแล้�
 
 | # | เรื่อง | สถานะ |
 |---|---|---|
-| 1 | ~~export payment ตัวอย่าง~~ | ✅ |
-| 2 | ~~export **invoice** `9400000005` (Q1–Q5)~~ | ✅ mapping อยู่ใน docs/04 |
-| 3 | ~~export payment `3300000017` แบบ `SELECT *` (Q6)~~ | ✅ ทุกบรรทัดใส่เอง ไม่มี auto line |
-| 4 | ~~ยืนยันชื่อ field / node ของ `Post` parameter จาก ADT~~ | ✅ |
-| 5 | ~~เขียน `YCL_PAYMENT`~~ | 🟡 activate + simulate ผ่านแล้ว 2026-09-11 · ยังไม่ push abapGit |
-| 6 | ~~post จริง~~ | ✅ `3300000024` |
-| 7 | เทียบ `3300000024` กับ `3300000017` · แก้ dump หลัง commit · คืน `gc_simulate = abap_true` · push class ผ่าน abapGit | ⬜ |
+| 1 | activate rev 17 + F9 simulate เช็ค payload 2 ใบ | ⬜ |
+| 2 | push `YCL_PAYMENT` ขึ้น abapGit → Claude อัปเดต status เป็น ✅ | ⬜ |
+| 3 | (production) BAdI derive assignment จาก invoice แทนค่า fix · เลข item ท้าย `…001` vs `…003` ให้ functional ยืนยัน | ⏸️ นอก scope POC |
+| 4 | (production) PK 15 / clearing / WHT code — ต้องเปลี่ยน API (Bank Statement) หรือยอมรับ PK 11 + Clearing API | ⏸️ นอก scope POC |

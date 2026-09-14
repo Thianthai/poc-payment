@@ -80,10 +80,10 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 
 | Node | Abstract entity | POC ใช้ |
 |---|---|---|
-| `_GLItems` [0..*] | `D_JournalEntryPostGLItemP` | ✅ 2 บรรทัด (bank, WHT) |
+| `_GLItems` [0..*] | `D_JournalEntryPostGLItemP` | ✅ ใบ 1: bank, WHT · ใบ 2: คู่ dummy `0011054001` |
 | `_ARItems` [0..*] | `D_JournalEntryPostARItemP` | ✅ 1 บรรทัด customer |
 | `_APItems` [0..*] | `D_JournalEntryPostAPItemP` | ไม่ใช้ |
-| `_TaxItems` [0..*] | `D_JournalEntryPostTaxItemP` | 🟡 deferred → output tax (DM/O1) — `_GLItems` + tax code ไม่ผ่าน (`Tax statement item missing`) · ยัง post ไม่สำเร็จ ดูหมายเหตุใน section |
+| `_TaxItems` [0..*] | `D_JournalEntryPostTaxItemP` | ✅ ใบ 2: deferred → output tax (DM/O1) direct — post ผ่านเมื่อมีคู่ dummy `_GLItems` ในใบเดียวกัน |
 | `_WithHoldingTaxItems` [0..*] | `D_JournalEntryPostWhgdItemP` | ไม่ใช้ (WHT line ของตัวอย่างเป็น G/L ธรรมดา) |
 | `_OneTimeCustomerSupplier` [0..1] | `D_JournalEntryPostCPDP` | ไม่ใช้ |
 
@@ -115,7 +115,7 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 | `GLAccountLineItem` | `docln6` | ✅ |
 | `TaxCode` | `mwskz` | ✅ `DM` (จาก invoice) / `O1` (target ของ DM) |
 | `TaxItemClassification` | `ktosl` | ✅ `MWS` — account key → derive G/L (`DM` → `0021082005` · `O1` → `0021082003`) · doc: mandatory ถ้าไม่ให้ `ConditionType` |
-| `ConditionType` | `kschl` | **ต้องใส่ `MWAS`** (output tax) — ไม่ใส่ได้ `KSCHL is empty` (rev 7) · `MWAS` ผ่านแล้ว (rev 8) |
+| `ConditionType` | `kschl` | ✅ **`MWAS`** (output tax) — ไม่ใส่ได้ `KSCHL is empty` |
 | `IsDirectTaxPosting` | `bapi_flg_dir` | ✅ `X` — post ภาษีตรงโดยไม่มี base line |
 | `TaxDeterminationDate` | `acpi_txdat` | ❌ doc ProductTaxItem: **"Do not use"** — ใส่ที่ header พอ |
 | `TaxRate` | `msatz_f05l` | ไม่ใส่ (derive จาก tax code + date) |
@@ -126,10 +126,11 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 > **ไม่มี `GLAccount` / `AssignmentReference` / `BusinessPlace`** — G/L มาจาก config ·
 > assignment `94000000052026003` ของตัวอย่างจึงใส่ไม่ได้ ·
 > business place ของ tax item **derive จากบรรทัด G/L/AR ในเอกสารเดียวกัน** → เอกสารที่มีแต่ tax item
-> ได้ `Enter a business place.` (rev 7, rev 8) และไม่มีที่ให้ใส่ — **blocker สุดท้ายที่ยืนยันแล้ว**
+> ได้ `Enter a business place.` และไม่มีที่ให้ใส่ → **ทางแก้ที่ผ่าน**: ใส่คู่ dummy `_GLItems` net 0
+> (`0011054001` ±ยอด · มี business place · บัญชีไม่ใช่ OIM) ไว้ในใบเดียวกัน → `7200000001` (2026-09-14)
 >
-> ผลการลอง: ใส่ tax item ในเอกสาร payment → ชน `G/L account item without tax code in document
-> with deferred taxes` (bank line ใส่ tax code ไม่ได้) · แยกเป็นเอกสาร tax item ล้วน → ชน business place
+> ใส่ tax item ในใบ payment ไม่ได้ → ชน `G/L account item without tax code in document with deferred
+> taxes` ที่ bank line (tax category ว่าง) — check นี้ไม่ฟ้องในใบ SA ที่ไม่มี AR line
 
 ### `_ARItems` — `D_JournalEntryPostARItemP` (ยืนยันจาก tenant)
 
@@ -166,22 +167,23 @@ Composition (ชื่อจริง — **ไม่ใช่ `_APARItems` / `_
 
 ผลรวม `JournalEntryItemAmount` ของทุกบรรทัดต้องเป็นศูนย์
 
-## Payload ที่ `YCL_PAYMENT` จะส่ง (derive จาก invoice `9400000005`)
+## Payload ที่ `YCL_PAYMENT` ส่ง (rev 17 final · derive จาก invoice `9400000005`)
 
 ```
-Header  : DZ · RFPI · 1000 · dates = วันนี้ · DocumentReferenceID generate ต่อรอบ
-เอกสาร 1  DZ · RFPI  (post ผ่านแล้ว → 3300000024)
+ใบ 1  DZ · RFPI · TaxDeterminationDate · ref POC…            → 3300000026
 _GLItems  [1]  0011092001  +6,238.96  bank    text/BBL01/CA001/assignment/value date/bplace 0000
 _GLItems  [2]  0011047003    +179.97  WHT     assignment/value date/bplace 0000
 _ARItems  [3]  0001000082  −6,418.93  customer · bplace 0000  (ได้ PK 11 ไม่ใช่ 15)
 
-เอกสาร 2  SA · RFBU  (ยัง post ไม่ผ่าน — business place)
-_TaxItems [1]  DM  +419.93  MWS direct · TaxBaseAmount +5,999  (G/L derive → 0021082005)
-_TaxItems [2]  O1  −419.93  MWS direct · TaxBaseAmount −5,999  (G/L derive → 0021082003)
+ใบ 2  SA · RFBU · TaxDeterminationDate · ref POC…T           → 7200000001
+_GLItems  [1]  0011054001    +419.93  dummy · bplace 0000   ┐ net 0 · ให้ tax item derive business place
+_GLItems  [2]  0011054001    −419.93  dummy · bplace 0000   ┘
+_TaxItems [3]  DM  +419.93  MWS · MWAS · direct · TaxBaseAmount +5,999  (G/L derive → 0021082005)
+_TaxItems [4]  O1  −419.93  MWS · MWAS · direct · TaxBaseAmount −5,999  (G/L derive → 0021082003)
 ```
 
-posting key ที่ระบบสร้างให้: G/L เดบิต `40` / เครดิต `50` · customer เครดิต `15` —
-ต้องเทียบกับเอกสารตัวอย่างว่าออกมาเหมือนกันไหม
+posting key ที่ระบบสร้าง: G/L เดบิต `40` / เครดิต `50` · customer เครดิต **`11`** (credit memo) —
+ตัวอย่างจาก Post Incoming Payments เป็น `15`
 
 ## ผลลัพธ์ที่ได้กลับมา
 
